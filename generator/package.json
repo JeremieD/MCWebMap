@@ -1,0 +1,21 @@
+{
+  "name": "mcwebmap-generator",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "bin": "./src/main.ts",
+  "type": "module",
+  "scripts": {},
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "@types/sharp": "^0.31.1",
+    "ts-loader": "^9.5.2",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.4.5"
+  },
+  "dependencies": {
+    "filereader": "^0.10.3",
+    "mca-json": "^1.2.2",
+    "sharp": "^0.34.5"
+  }
+}

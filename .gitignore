@@ -1,0 +1,5 @@
+.DS_Store
+dist/resources/js/*
+dist/resources/css/*
+node_modules/
+/generator/output
