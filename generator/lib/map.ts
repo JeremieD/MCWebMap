@@ -27,22 +27,26 @@ export function generateTile(worldPath: string, regionX: number, regionZ: number
     const chunkCoords = chunk.worldCoordinates()!;
     console.log(chunk.chunkCoordinates());
 
-    for (let offsetZ = 0; offsetZ < SECTION_SIZE; offsetZ++)
-    for (let offsetX = 0; offsetX < SECTION_SIZE; offsetX++) {
-      // Find the highest block in this column
-      const x = chunkCoords[0] + offsetX;
-      const z = chunkCoords[1] + offsetZ;
-      let surface = getHighestBlock(chunk, [x, z]);
+    for (let chunkZ = 0; chunkZ < SECTION_SIZE; chunkZ++)
+    for (let chunkX = 0; chunkX < SECTION_SIZE; chunkX++) {
+      // World coords
+      const worldX = chunkCoords[0] + chunkX
+      const worldZ = chunkCoords[1] + chunkZ;
+      // Region coords
+      const regionX = mod(worldX, REGION_SIZE);
+      const regionZ = mod(worldZ, REGION_SIZE);
+
+      let surface = getHighestBlock(chunk, [worldX, worldZ]);
       let color = getMapColor(surface);
       let y = surface.coords[1];
       while (color === null && y > -64) {
         try {
-          surface = chunk.getBlock([x, --y, z]);
+          surface = chunk.getBlock([worldX, --y, worldZ]);
         } catch (e) { continue; }
         color = getMapColor(surface);
       }
-      effectiveHeightmap[x%512] ??= [];
-      effectiveHeightmap[x%512][z%512] = y;
+      effectiveHeightmap[regionX] ??= [];
+      effectiveHeightmap[regionX][regionZ] = y;
 
       color ??= [0, 0, 0, 0]; // assign transparent to null color
 
@@ -51,7 +55,7 @@ export function generateTile(worldPath: string, regionX: number, regionZ: number
         if (depth > 9) {
           shadeColor(color, brightness.low);
         } else if (depth > 7) {
-          if ((x+z) % 2 === 0) {
+          if ((regionX+regionZ) % 2 === 0) {
             shadeColor(color, brightness.low);
           } else {
             shadeColor(color, brightness.normal);
@@ -59,7 +63,7 @@ export function generateTile(worldPath: string, regionX: number, regionZ: number
         } else if (depth > 5) {
           shadeColor(color, brightness.normal);
         } else if (depth > 3) {
-          if ((x+z) % 2 === 0) {
+          if ((regionX+regionZ) % 2 === 0) {
             shadeColor(color, brightness.normal);
           } else {
             shadeColor(color, brightness.high);
@@ -69,8 +73,8 @@ export function generateTile(worldPath: string, regionX: number, regionZ: number
         }
 
       } else {
-        if (z % 512 > 0) {
-          const northNeighbourY = effectiveHeightmap[x%512][z%512 - 1];
+        if (regionZ > 0) {
+          const northNeighbourY = effectiveHeightmap[regionX][regionZ - 1];
           if (y < northNeighbourY) { // Current block is lower
             shadeColor(color, brightness.low);
           } else if (y > northNeighbourY) { // Current block is higher
@@ -81,7 +85,7 @@ export function generateTile(worldPath: string, regionX: number, regionZ: number
         }
       }
 
-      const pixelOffset = (z*REGION_SIZE + x) * IMG_CHANNELS;
+      const pixelOffset = (regionZ*REGION_SIZE + regionX) * IMG_CHANNELS;
       mapPixels[pixelOffset]   = color[0];
       mapPixels[pixelOffset+1] = color[1];
       mapPixels[pixelOffset+2] = color[2];
@@ -1337,3 +1341,9 @@ const blocks = {
   potted_closed_eyeblossom: 0,
   firefly_bush: 7
 };
+
+/**
+ * Modulo that treats negative numbers more sanely.
+ * `mod(x, n)` is roughly equal to `x % n`.
+ */
+const mod = (x: number, n: number) => ((x % n) + n) % n;
