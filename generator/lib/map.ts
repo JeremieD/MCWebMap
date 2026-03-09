@@ -54,15 +54,15 @@ export function generateTile(worldPath: string, regionX: number, regionZ: number
         const depth = getDepth(chunk, surface);
         if (depth > 9) {
           shadeColor(color, brightness.low);
-        } else if (depth > 7) {
+        } else if (depth > 6) {
           if ((regionX+regionZ) % 2 === 0) {
             shadeColor(color, brightness.low);
           } else {
             shadeColor(color, brightness.normal);
           }
-        } else if (depth > 5) {
+        } else if (depth > 4) {
           shadeColor(color, brightness.normal);
-        } else if (depth > 3) {
+        } else if (depth > 2) {
           if ((regionX+regionZ) % 2 === 0) {
             shadeColor(color, brightness.normal);
           } else {
