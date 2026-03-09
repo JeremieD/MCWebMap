@@ -50,40 +50,25 @@ export function generateTile(worldPath: string, regionX: number, regionZ: number
 
       color ??= [0, 0, 0, 0]; // assign transparent to null color
 
-      if (surface.name === "minecraft:water") {
+      // Shading
+      let shade = brightness.normal;
+      if (surface.name === "minecraft:water") { // Depth-shading
         const depth = getDepth(chunk, surface);
-        if (depth > 9) {
-          shadeColor(color, brightness.low);
-        } else if (depth > 6) {
-          if ((regionX+regionZ) % 2 === 0) {
-            shadeColor(color, brightness.low);
-          } else {
-            shadeColor(color, brightness.normal);
-          }
-        } else if (depth > 4) {
-          shadeColor(color, brightness.normal);
-        } else if (depth > 2) {
-          if ((regionX+regionZ) % 2 === 0) {
-            shadeColor(color, brightness.normal);
-          } else {
-            shadeColor(color, brightness.high);
-          }
-        } else {
-          shadeColor(color, brightness.high);
-        }
+        if (depth > 9) shade = brightness.low;
+        else if (depth > 6 && (regionX+regionZ) % 2 !== 0) shade = brightness.low;
+        else if (depth > 4) shade = brightness.normal;
+        else if (depth > 2 && (regionX+regionZ) % 2 !== 0) shade = brightness.high;
+        else shade = brightness.high;
 
-      } else {
+      } else { // Top shading
         if (regionZ > 0) {
           const northNeighbourY = effectiveHeightmap[regionX][regionZ - 1];
-          if (y < northNeighbourY) { // Current block is lower
-            shadeColor(color, brightness.low);
-          } else if (y > northNeighbourY) { // Current block is higher
-            shadeColor(color, brightness.high);
-          } else {
-            shadeColor(color, brightness.normal);
-          }
+          if (y < northNeighbourY) shade = brightness.low;       // Current block is lower
+          else if (y > northNeighbourY) shade = brightness.high; // Current block is higher
         }
       }
+
+      shadeColor(color, shade);
 
       const pixelOffset = (regionZ*REGION_SIZE + regionX) * IMG_CHANNELS;
       mapPixels[pixelOffset]   = color[0];
