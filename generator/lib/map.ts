@@ -1,8 +1,9 @@
-import type { Generic } from "mca-json";
+import type { BlockInstance, Chunk } from "mca-json";
 import { Anvil } from "mca-json";
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
-import { getDepth, getHighestBlock } from "./chunk.ts";
+import { getBiome, getDepth, getHighestBlock, getStatus } from "./chunk.ts";
+import { mod } from "./util.ts";
 
 const REGION_SIZE = 512; // blocks
 const SECTION_SIZE = 16; // blocks
@@ -12,7 +13,13 @@ const WORLD_MIN_HEIGHT = -64;
 
 // TODO:
 // - Check waterloggable blocks / blocks like kelp
+//   - it seems waterlogged blocked are treated as water for map purposes.
+//   - but mca-json is garbage and does not return block state
+//   - so i guess i gotta find another library or code it myself again :/
 // - Biome tints from Bedrock. See if it's prettier!
+//   - Biome smoothing
+// - CLI options to output different region boundaries
+// - Fix top border of region tiles being brighter
 
 export function generateTile(worldPath: string, regionX: number, regionZ: number) {
   const regionFile = readFileSync(`${worldPath}/region/r.${regionX}.${regionZ}.mca`);
@@ -25,50 +32,56 @@ export function generateTile(worldPath: string, regionX: number, regionZ: number
 
   for (const chunk of chunks) {
     const chunkCoords = chunk.worldCoordinates()!;
-    console.log(chunk.chunkCoordinates());
+    const status = getStatus(chunk);
+    let color: number[] | null | undefined;
+
+    console.log(chunk.chunkKey());
 
     for (let chunkZ = 0; chunkZ < SECTION_SIZE; chunkZ++)
     for (let chunkX = 0; chunkX < SECTION_SIZE; chunkX++) {
-      // World coords
       const worldX = chunkCoords[0] + chunkX
       const worldZ = chunkCoords[1] + chunkZ;
-      // Region coords
       const regionX = mod(worldX, REGION_SIZE);
       const regionZ = mod(worldZ, REGION_SIZE);
 
-      let surface = getHighestBlock(chunk, [worldX, worldZ]);
-      let color = getMapColor(surface);
-      let y = surface.coords[1];
-      while (color === null && y > -64) {
-        try {
-          surface = chunk.getBlock([worldX, --y, worldZ]);
-        } catch (e) { continue; }
-        color = getMapColor(surface);
-      }
-      effectiveHeightmap[regionX] ??= [];
-      effectiveHeightmap[regionX][regionZ] = y;
-
-      color ??= [0, 0, 0, 0]; // assign transparent to null color
-
-      // Shading
-      let shade = brightness.normal;
-      if (surface.name === "minecraft:water") { // Depth-shading
-        const depth = getDepth(chunk, surface);
-        if (depth > 9) shade = brightness.low;
-        else if (depth > 6 && (regionX+regionZ) % 2 !== 0) shade = brightness.low;
-        else if (depth > 4) shade = brightness.normal;
-        else if (depth > 2 && (regionX+regionZ) % 2 !== 0) shade = brightness.high;
-        else shade = brightness.high;
-
-      } else { // Top shading
-        if (regionZ > 0) {
-          const northNeighbourY = effectiveHeightmap[regionX][regionZ - 1];
-          if (y < northNeighbourY) shade = brightness.low;       // Current block is lower
-          else if (y > northNeighbourY) shade = brightness.high; // Current block is higher
+      if (status === "minecraft:full" || status === "minecraft:initialize_light") {
+        let surface = getHighestBlock(chunk, [worldX, worldZ]);
+        color = getMapColor(chunk, surface);
+        let y = surface.coords[1];
+        while (color === null && y > -64) {
+          try {
+            surface = chunk.getBlock([worldX, --y, worldZ]);
+          } catch (e) { continue; }
+          color = getMapColor(chunk, surface);
         }
-      }
+        effectiveHeightmap[regionX] ??= [];
+        effectiveHeightmap[regionX][regionZ] = y;
 
-      shadeColor(color, shade);
+        color ??= [0, 0, 0, 0]; // assign transparent to null color
+
+        // Shading
+        let shade = brightness.normal;
+        if (surface.name === "minecraft:water") { // Depth-shading
+          const depth = getDepth(chunk, surface);
+          if (depth > 9) shade = brightness.low;
+          else if (depth > 6 && ((regionX+regionZ) % 2 !== 0)) shade = brightness.low;
+          else if (depth > 4) shade = brightness.normal;
+          else if (depth > 2 && ((regionX+regionZ) % 2 !== 0)) shade = brightness.high;
+          else shade = brightness.high;
+
+        } else { // Top shading
+          if (regionZ > 0) {
+            const northNeighbourY = effectiveHeightmap[regionX][regionZ - 1];
+            if (y < northNeighbourY) shade = brightness.low;       // Current block is lower
+            else if (y > northNeighbourY) shade = brightness.high; // Current block is higher
+          }
+        }
+
+        shadeColor(color, shade);
+
+      } else {
+        color = [0,0,0, 128]; // Not fully generated
+      }
 
       const pixelOffset = (regionZ*REGION_SIZE + regionX) * IMG_CHANNELS;
       mapPixels[pixelOffset]   = color[0];
@@ -89,26 +102,288 @@ export function generateTile(worldPath: string, regionX: number, regionZ: number
     .toFile(`output/${regionX}.${regionZ}.webp`);
 }
 
-function getMapColor(block: Generic | undefined): number[] | null {
-  const name = block?.name.split(":")[1];
-  if (!name) {
-    console.error("Unnamed block ", block);
-    return colors[0];
-  }
-  const color = colors[blocks?.[name]];
+function getMapColor(chunk: Chunk, block: BlockInstance | undefined): number[] | null {
+  if (!block) throw new Error("Block is undefined");
+  const name = block.name.split(":")[1];
+
+  let color = colors[blocks?.[name]];
   if (color === undefined) {
     console.error("Undefined color ", block.name);
     return colors[0];
   }
   if (color === null) return color;
+
+  // Special cases
+  if (name === "grass_block") {
+    // Grass color
+    color = grassTint(getBiome(chunk, block.coords).split(":")[1]);
+
+  } else if (name === "short_grass" || name === "tall_grass" || name === "bush" ||
+             name === "fern" || name === "large_fern" || name === "sugar_cane") {
+    // Plant tint
+    const tint = grassTint(getBiome(chunk, block.coords).split(":")[1]);
+    color = tintColor(color, tint);
+
+  } else if (name === "oak_leaves" || name === "jungle_leaves" || name === "acacia_leaves" ||
+             name === "dark_oak_leaves" || name === "mangrove_leaves" || name === "vines") {
+    // Foliage color
+    const tint = foliageTint(getBiome(chunk, block.coords).split(":")[1]);
+    color = tintColor(color, tint, .666);
+
+
+  // } else if (name === "water") {
+  //   // Water color
+
+  }
+
   return [...color];
 }
 
-function shadeColor(color: number[], multiplier: number) {
-  for (let i = 0; i < 3; i++) {
-    color[i] = Math.floor(color[i] * multiplier);
-  }
+/**
+ *
+ * @param color
+ * @param shade
+ */
+function shadeColor(color: number[], shade: number) {
+  for (let i = 0; i < 3; i++) color[i] = Math.floor(color[i] * shade);
 }
+
+/**
+ *
+ * @param color
+ * @param tint
+ * @param amount
+ * @returns
+ */
+function tintColor(color: number[], tint: number[], amount = .5) {
+  return [
+    Math.floor(color[0]*(1-amount) + tint[0]*amount),
+    Math.floor(color[1]*(1-amount) + tint[1]*amount),
+    Math.floor(color[2]*(1-amount) + tint[2]*amount),
+    Math.floor(color[1]*(1-amount) + tint[3]*amount)
+  ];
+}
+
+// From mc.wiki/Block_colors#Grass_colors
+const grassTint = (biome: string) => {
+  switch (biome) {
+    case "badlands":
+    case "eroded_badlands":
+    case "wooded_badlands":
+      return [144, 129, 77, 255] // #90814D
+
+    case "desert":
+    case "savanna":
+    case "savanna_plateau":
+    case "windswept_savanna":
+    case "nether_wastes":
+    case "soul_sand_valley":
+    case "crimson_forest":
+    case "warped_forest":
+    case "basalt_deltas":
+      return [191, 183, 85, 255]; // #BFB755
+
+    case "stony_peaks":
+      return [154, 190, 75, 255]; // #9ABE4B
+
+    case "jungle":
+    case "bamboo_jungle":
+      return [89, 201, 60, 255]; // #59C93C
+
+    case "sparse_jungle":
+      return [100, 199, 63, 255]; // #64C73F
+
+    case "mushroom_fields":
+      return [85, 201, 63, 255]; // #55C93F
+
+    case "plains":
+    case "sunflower_plains":
+    case "beach":
+    case "dripstone_caves":
+    case "deep_dark":
+      return [145, 189, 89, 255]; // #91BD59
+
+    case "swamp":
+    case "mangrove_swamp":
+      return [76, 118, 60, 255]; // #6A7039 and #4C763C based on XZ noise
+
+    case "forest":
+    case "flower_forest":
+      return [121, 192, 90, 255]; // #79C05A
+
+    case "dark_forest":
+      return [80, 122, 50, 255]; // #507A32
+
+    case "pale_garden":
+      return [135, 141, 118, 255]; // #878D76
+
+    case "birch_forest":
+    case "old_growth_birch_forest":
+      return [136, 187, 103, 255]; // #88BB67
+
+    case "ocean":
+    case "deep_ocean":
+    case "warm_ocean":
+    case "lukewarm_ocean":
+    case "deep_lukewarm_ocean":
+    case "cold_ocean":
+    case "deep_cold_ocean":
+    case "deep_frozen_ocean":
+    case "river":
+    case "lush_caves":
+    case "the_end":
+    case "small_end_islands":
+    case "end_barrens":
+    case "end_midlands":
+    case "end_highlands":
+    case "the_void":
+      return [142, 185, 113, 255]; // #8EB971
+
+    case "meadow":
+      return [131, 187, 109, 255]; // #83BB6D
+
+    case "cherry_grove":
+      return [182, 219, 97, 255]; // #B6DB61
+
+    case "old_growth_pine_taiga":
+      return [134, 184, 127, 255]; // #86B87F
+
+    case "taiga":
+    case "old_growth_spruce_taiga":
+      return [134, 183, 131, 255]; // #86B783
+
+    case "windswept_hills":
+    case "windswept_gravelly_hills":
+    case "windswept_forest":
+    case "stony_shore":
+      return [138, 182, 137, 255]; // #8AB689
+
+    case "snowy_beach":
+      return [131, 181, 147, 255]; // #83B593
+
+    case "snowy_plains":
+    case "ice_spikes":
+    case "snowy_taiga":
+    case "frozen_ocean":
+    case "grove":
+    case "snowy_slopes":
+    case "frozen_peaks":
+    case "jagged_peaks":
+      return [128, 180, 151, 255]; // #80B497
+  }
+  throw new Error("No tint defined for " + biome);
+};
+// From mc.wiki/Block_colors#Foliage_colors
+const foliageTint = (biome: string) => {
+  switch (biome) {
+    case "badlands":
+    case "eroded_badlands":
+    case "wooded_badlands":
+      return [158, 129, 77, 255] // #9E814D
+
+    case "desert":
+    case "savanna":
+    case "savanna_plateau":
+    case "windswept_savanna":
+    case "nether_wastes":
+    case "soul_sand_valley":
+    case "crimson_forest":
+    case "warped_forest":
+    case "basalt_deltas":
+      return [174, 164, 42, 255]; // #AEA42A
+
+    case "stony_peaks":
+      return [130, 172, 30, 255]; // #82AC1E
+
+    case "jungle":
+    case "bamboo_jungle":
+      return [48, 187, 11, 255]; // #30BB0B
+
+    case "sparse_jungle":
+      return [62, 184, 15, 255]; // #3EB80F
+
+    case "mushroom_fields":
+      return [43, 187, 15, 255]; // #2BBB0F
+
+    case "plains":
+    case "sunflower_plains":
+    case "beach":
+    case "dripstone_caves":
+    case "deep_dark":
+      return [119, 171, 47, 255]; // #77AB2F
+
+    case "swamp":
+      return [106, 112, 57, 255]; // #6A7039
+
+    case "mangrove_swamp":
+      return [141, 177, 39, 255]; // #8DB127
+
+    case "forest":
+    case "flower_forest":
+      return [89, 174, 48, 255]; // #59AE30
+
+    case "dark_forest":
+      return [80, 122, 50, 255]; // #507A32 (special case)
+
+    case "pale_garden":
+      return [135, 141, 118, 255]; // #878D76
+
+    case "birch_forest":
+    case "old_growth_birch_forest":
+      return [107, 169, 65, 255]; // #6BA941
+
+    case "ocean":
+    case "deep_ocean":
+    case "warm_ocean":
+    case "lukewarm_ocean":
+    case "deep_lukewarm_ocean":
+    case "cold_ocean":
+    case "deep_cold_ocean":
+    case "deep_frozen_ocean":
+    case "river":
+    case "lush_caves":
+    case "the_end":
+    case "small_end_islands":
+    case "end_barrens":
+    case "end_midlands":
+    case "end_highlands":
+    case "the_void":
+      return [113, 167, 77, 255]; // #71A74D
+
+    case "meadow":
+      return [99, 169, 72, 255]; // #63A948
+
+    case "cherry_grove":
+      return [182, 219, 97, 255]; // #B6DB61
+
+    case "old_growth_pine_taiga":
+      return [104, 165, 95, 255]; // #68A55F
+
+    case "taiga":
+    case "old_growth_spruce_taiga":
+      return [104, 164, 100, 255]; // #68A464
+
+    case "windswept_hills":
+    case "windswept_gravelly_hills":
+    case "windswept_forest":
+    case "stony_shore":
+      return [109, 163, 107, 255]; // #6DA36B
+
+    case "snowy_beach":
+      return [100, 162, 120, 255]; // #64A278
+
+    case "snowy_plains":
+    case "ice_spikes":
+    case "snowy_taiga":
+    case "frozen_ocean":
+    case "grove":
+    case "snowy_slopes":
+    case "frozen_peaks":
+    case "jagged_peaks":
+      return [96, 161, 123, 255]; // #60A17B
+  }
+  throw new Error("No tint defined for " + biome);
+};
 
 // Extracted from MapColor.class v1.21.8
 const colors = [
@@ -1326,9 +1601,3 @@ const blocks = {
   potted_closed_eyeblossom: 0,
   firefly_bush: 7
 };
-
-/**
- * Modulo that treats negative numbers more sanely.
- * `mod(x, n)` is roughly equal to `x % n`.
- */
-const mod = (x: number, n: number) => ((x % n) + n) % n;
