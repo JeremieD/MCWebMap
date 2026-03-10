@@ -1,25 +1,22 @@
-import type { BlockInstance, Chunk } from "mca-json";
+import type { BlockInstance, Chunk, Coords3d } from "mca-json";
 import { Anvil } from "mca-json";
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
 import { getBiome, getDepth, getHighestBlock, getStatus } from "./chunk.ts";
-import { mod } from "./util.ts";
+import { mod, REGION_SIZE, SECTION_SIZE } from "./util.ts";
 
-const REGION_SIZE = 512; // blocks
-const SECTION_SIZE = 16; // blocks
 const IMG_CHANNELS = 4;  // RGBA
-const WORLD_MAX_HEIGHT = 320;
-const WORLD_MIN_HEIGHT = -64;
 
 // TODO:
 // - Check waterloggable blocks / blocks like kelp
-//   - it seems waterlogged blocked are treated as water for map purposes.
+//   - it seems waterlogged blocks are treated as water for map purposes?
 //   - but mca-json is garbage and does not return block state
 //   - so i guess i gotta find another library or code it myself again :/
-// - Biome tints from Bedrock. See if it's prettier!
-//   - Biome smoothing
+// - Swamp color noise
 // - CLI options to output different region boundaries
 // - Fix top border of region tiles being brighter
+// - Add flower colours?
+// - Prettier biome smoothing
 
 export function generateTile(worldPath: string, regionX: number, regionZ: number) {
   const regionFile = readFileSync(`${worldPath}/region/r.${regionX}.${regionZ}.mca`);
@@ -46,13 +43,13 @@ export function generateTile(worldPath: string, regionX: number, regionZ: number
 
       if (status === "minecraft:full" || status === "minecraft:initialize_light") {
         let surface = getHighestBlock(chunk, [worldX, worldZ]);
-        color = getMapColor(chunk, surface);
+        color = getMapColor(region, chunk, surface);
         let y = surface.coords[1];
         while (color === null && y > -64) {
           try {
             surface = chunk.getBlock([worldX, --y, worldZ]);
           } catch (e) { continue; }
-          color = getMapColor(chunk, surface);
+          color = getMapColor(region, chunk, surface);
         }
         effectiveHeightmap[regionX] ??= [];
         effectiveHeightmap[regionX][regionZ] = y;
@@ -102,7 +99,7 @@ export function generateTile(worldPath: string, regionX: number, regionZ: number
     .toFile(`output/${regionX}.${regionZ}.webp`);
 }
 
-function getMapColor(chunk: Chunk, block: BlockInstance | undefined): number[] | null {
+function getMapColor(region: Anvil, chunk: Chunk, block: BlockInstance | undefined): number[] | null {
   if (!block) throw new Error("Block is undefined");
   const name = block.name.split(":")[1];
 
@@ -113,49 +110,39 @@ function getMapColor(chunk: Chunk, block: BlockInstance | undefined): number[] |
   }
   if (color === null) return color;
 
-  // Special cases
+  // Tints
   if (name === "grass_block") {
     // Grass color
-    color = grassTint(getBiome(chunk, block.coords).split(":")[1]);
+    const tint = biomeTintSmooth(region, block.coords, grassTint);
+    if (tint) color = tint;
 
   } else if (name === "short_grass" || name === "tall_grass" || name === "bush" ||
              name === "fern" || name === "large_fern" || name === "sugar_cane") {
     // Plant tint
-    const tint = grassTint(getBiome(chunk, block.coords).split(":")[1]);
+    const tint = biomeTintSmooth(region, block.coords, grassTint);
     color = tintColor(color, tint);
 
   } else if (name === "oak_leaves" || name === "jungle_leaves" || name === "acacia_leaves" ||
              name === "dark_oak_leaves" || name === "mangrove_leaves" || name === "vines") {
     // Foliage color
-    const tint = foliageTint(getBiome(chunk, block.coords).split(":")[1]);
+    const tint = biomeTintSmooth(region, block.coords, foliageTint);
     color = tintColor(color, tint);
 
   } else if (name === "water") {
     // Water color
-    const tint = waterTint(getBiome(chunk, block.coords).split(":")[1]);
+    const tint = biomeTintSmooth(region, block.coords, waterTint);
     color = tintColor(color, tint);
   }
 
   return [...color];
 }
 
-/**
- *
- * @param color
- * @param shade
- */
 function shadeColor(color: number[], shade: number) {
   for (let i = 0; i < 3; i++) color[i] = Math.floor(color[i] * shade);
 }
 
-/**
- *
- * @param color
- * @param tint
- * @param amount
- * @returns
- */
-function tintColor(color: number[], tint: number[], amount = .5) {
+function tintColor(color: number[], tint: number[] | undefined, amount = .5) {
+  if (!tint) return color;
   return [
     Math.floor(color[0]*(1-amount) + tint[0]*amount),
     Math.floor(color[1]*(1-amount) + tint[1]*amount),
@@ -164,8 +151,38 @@ function tintColor(color: number[], tint: number[], amount = .5) {
   ];
 }
 
+function biomeTintSmooth(region: Anvil, coords: Coords3d, colorFunction: (biome: string) => number[] | undefined) {
+  const tint = colorFunction(getBiome(region, coords))!;
+  // Offset coordinate of a "circle" of radius 2 around coords.
+  const offsets = [[1,0], [1,1], [0,1], [-1,1], [-1,0], [-1,-1], [0,-1], [1,-1],
+                   [2,-1], [2,0], [2,1], [1,2], [0,2], [-1,2], [-2,1], [-2,0], [-2,-1], [-1,-2], [0,-2], [1,-2]];
+  // Offset coordinate of a "circle" of radius 1 around coords.
+  // const offsets = [[1,0], [1,1], [0,1], [-1,1], [-1,0], [-1,-1], [0,-1], [1,-1]];
+
+  let numberOfTints = 1;
+
+  let neighborTint: number[] | undefined;
+  for (const offset of offsets) {
+    try {
+      neighborTint = colorFunction(getBiome(region, [coords[0]+offset[0], coords[1], coords[2]+offset[1]]));
+    } catch (e) { continue; }
+    if (!neighborTint) continue;
+    numberOfTints++;
+    tint[0] += neighborTint[0];
+    tint[1] += neighborTint[1];
+    tint[2] += neighborTint[2];
+  }
+
+  tint[0] = Math.floor(tint[0]/numberOfTints);
+  tint[1] = Math.floor(tint[1]/numberOfTints);
+  tint[2] = Math.floor(tint[2]/numberOfTints);
+
+  return tint;
+}
+
 // From mc.wiki/Block_colors#Grass_colors
 const grassTint = (biome: string) => {
+  biome = biome.split(":")[1];
   switch (biome) {
     case "badlands":
     case "eroded_badlands":
@@ -271,10 +288,12 @@ const grassTint = (biome: string) => {
     case "jagged_peaks":
       return [128, 180, 151, 255]; // #80B497
   }
-  throw new Error("No tint defined for " + biome);
+  console.error("No tint defined for " + biome);
+  return;
 };
 // From mc.wiki/Block_colors#Foliage_colors
 const foliageTint = (biome: string) => {
+  biome = biome.split(":")[1];
   switch (biome) {
     case "badlands":
     case "eroded_badlands":
@@ -382,10 +401,12 @@ const foliageTint = (biome: string) => {
     case "jagged_peaks":
       return [96, 161, 123, 255]; // #60A17B
   }
-  throw new Error("No tint defined for " + biome);
+  console.error("No tint defined for " + biome);
+  return;
 };
 // From mc.wiki/Block_colors#Bedrock_Edition
 const waterTint = (biome: string) => {
+  biome = biome.split(":")[1];
   switch (biome) {
     case "plains":
     case "sunflower_plains":
@@ -484,7 +505,8 @@ const waterTint = (biome: string) => {
     case "deep_frozen_ocean":
       return [37, 112, 181, 255]; // #2570B5
   }
-  throw new Error("No tint defined for " + biome);
+  console.error("No tint defined for " + biome);
+  return;
 };
 
 // Extracted from MapColor.class v1.21.8

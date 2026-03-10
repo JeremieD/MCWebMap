@@ -1,6 +1,17 @@
 import type { BlockInstance, Coords2d, Coords3d } from "mca-json";
-import { Chunk } from "mca-json";
-import { mod } from "./util.ts";
+import { Anvil, Chunk } from "mca-json";
+import { mod, REGION_SIZE, SECTION_SIZE } from "./util.ts";
+
+const chunkCache = {};
+function getChunk(region: Anvil, blockCoords: Coords2d) {
+  const chunkX = Math.floor(blockCoords[0] / SECTION_SIZE);
+  const chunkZ = Math.floor(blockCoords[1] / SECTION_SIZE);
+  const chunkKey = chunkX + "," + chunkZ;
+  if (chunkCache[chunkKey]) return chunkCache[chunkKey];
+
+  chunkCache[chunkKey] = region.getChunk([chunkX, chunkZ]);
+  return chunkCache[chunkKey];
+}
 
 /**
  * Returns the instance of the block at the highest y-value, for a given
@@ -58,12 +69,21 @@ export function getStatus(chunk: Chunk) {
   return chunk.toObject().compound.Status.string;
 }
 
+const biomeCache = {};
 /**
  * Returns the biome name at a given (x, y, z) world coordinate.
  * @param chunk
  * @param coords
  */
-export function getBiome(chunk: Chunk, coords: Coords3d): string {
+export function getBiome(chunk: Chunk | Anvil, coords: Coords3d): string {
+  const blockKey = coords.join(".");
+  if (biomeCache[blockKey]) return biomeCache[blockKey];
+
+  if (chunk instanceof Anvil) {
+    chunk = getChunk(chunk, [coords[0], coords[2]]);
+  }
+  chunk = chunk as Chunk;
+
   const [xWorld, zWorld] = chunk.worldCoordinates() ?? [0, 0];
   const xChunk = coords[0] - xWorld;
   const zChunk = coords[2] - zWorld;
@@ -75,7 +95,10 @@ export function getBiome(chunk: Chunk, coords: Coords3d): string {
 
   const biomePalette = section.compound.biomes.compound.palette.list.map(o => o.string);
   const paletteLength = biomePalette.length;
-  if (paletteLength === 1) return biomePalette[0];
+  if (paletteLength === 1) {
+    biomeCache[blockKey] = biomePalette[0];
+    return biomePalette[0];
+  }
 
   const biomeData = section.compound.biomes.compound.data.longArray.map(s => BigInt(s));
 
@@ -85,6 +108,8 @@ export function getBiome(chunk: Chunk, coords: Coords3d): string {
   const index = (mod(Math.floor(coords[1]/4), 4) << 4) | ((mod(Math.floor(coords[2]/4), 4)) << 2) | mod(Math.floor(coords[0]/4), 4);
   const packedLong = biomeData[Math.floor(index / idsPerLong)] ?? 0n;
   const biomeId = Number((packedLong >> BigInt(index%idsPerLong*bitsPerPaletteId)) & BigInt(2**bitsPerPaletteId-1));
+
+  biomeCache[blockKey] = biomePalette[biomeId];
   return biomePalette[biomeId];
 }
 
