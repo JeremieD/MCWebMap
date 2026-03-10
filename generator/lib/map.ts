@@ -5,7 +5,7 @@ import sharp from "sharp";
 import { getBiome, getDepth, getHighestBlock, getStatus } from "./chunk.ts";
 import { mod, REGION_SIZE, SECTION_SIZE } from "./util.ts";
 
-const IMG_CHANNELS = 4;  // RGBA
+const IMG_CHANNELS = 4; // RGBA
 
 // TODO:
 // - Check waterloggable blocks / blocks like kelp
@@ -17,6 +17,7 @@ const IMG_CHANNELS = 4;  // RGBA
 // - Fix top border of region tiles being brighter
 // - Add flower colours?
 // - Prettier biome smoothing
+// - fix mca-json parseSection throwing when there is no data. it's cuz the whole section is filled with the same block dumbass -_-
 
 export function generateTile(worldPath: string, regionX: number, regionZ: number) {
   const regionFile = readFileSync(`${worldPath}/region/r.${regionX}.${regionZ}.mca`);

@@ -123,7 +123,12 @@ export function getDepth(chunk: Chunk, block: BlockInstance): number {
   let current = block;
   do {
     depth++;
-    current = chunk.getBlock([current.coords[0], current.coords[1]-1, current.coords[2]]);
+    try {
+      current = chunk.getBlock([current.coords[0], current.coords[1]-1, current.coords[2]]);
+    } catch (e) {
+      console.error(current, e);
+      break;
+    }
   } while (current.name === block.name);
   return depth;
 }
