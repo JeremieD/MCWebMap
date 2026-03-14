@@ -283,6 +283,7 @@ const grassTint = (biome: string) => {
     case "ice_spikes":
     case "snowy_taiga":
     case "frozen_ocean":
+    case "frozen_river":
     case "grove":
     case "snowy_slopes":
     case "frozen_peaks":
@@ -396,6 +397,7 @@ const foliageTint = (biome: string) => {
     case "ice_spikes":
     case "snowy_taiga":
     case "frozen_ocean":
+    case "frozen_river":
     case "grove":
     case "snowy_slopes":
     case "frozen_peaks":
