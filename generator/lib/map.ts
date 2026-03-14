@@ -514,68 +514,68 @@ const waterTint = (biome: string) => {
 
 // Extracted from MapColor.class v1.21.8
 const colors = [
-  null,                 // clear
-  [127, 178, 56, 255],  // paleGreen
-  [247, 233, 163, 255], // paleYellow
-  [199, 199, 199, 255], // whiteGray
-  [255, 0, 0, 255],     // brightRed
-  [160, 160, 255, 255], // palePurple
-  [167, 167, 167, 255], // ironGray
-  [0, 124, 0, 255],     // darkGreen
-  [255, 255, 255, 255], // white
-  [164, 168, 184, 255], // lightBlueGray
-  [151, 109, 77, 255],  // dirtBrown
-  [112, 112, 112, 255], // stoneGray
-  [64, 64, 255, 255],   // waterBlue
-  [143, 119, 72, 255],  // oakTan
-  [255, 252, 245, 255], // offWhite
-  [216, 127, 51, 255],  // orange
-  [178, 76, 216, 255],  // magenta
-  [102, 153, 216, 255], // lightBlue
-  [229, 229, 51, 255],  // yellow
-  [127, 204, 25, 255],  // lime
-  [242, 127, 165, 255], // pink
-  [76, 76, 76, 255],    // gray
-  [153, 153, 153, 255], // lightGray
-  [76, 127, 153, 255],  // cyan
-  [127, 63, 178, 255],  // purple
-  [51, 76, 178, 255],   // blue
-  [102, 76, 51, 255],   // brown
-  [102, 127, 51, 255],  // green
-  [153, 51, 51, 255],   // red
-  [25, 25, 25, 255],    // black
-  [250, 238, 77, 255],  // gold
-  [92, 219, 213, 255],  // diamondBlue
-  [74, 128, 255, 255],  // lapisBlue
-  [0, 217, 58, 255],    // emeraldGreen
-  [129, 86, 49, 255],   // spruceBrown
-  [112, 2, 0, 255],     // darkRed
-  [209, 177, 161, 255], // terracottaWhite
-  [159, 82, 36, 255],   // terracottaOrange
-  [149, 87, 108, 255],  // terracottaMagenta
-  [112, 108, 138, 255], // terracottaLightBlue
-  [186, 133, 36, 255],  // terracottaYellow
-  [103, 117, 53, 255],  // terracottaLime
-  [160, 77, 78, 255],   // terracottaPink
-  [57, 41, 35, 255],    // terracottaGray
-  [135, 107, 98, 255],  // terracottaLightGray
-  [87, 92, 92, 255],    // terracottaCyan
-  [122, 73, 88, 255],   // terracottaPurple
-  [76, 62, 92, 255],    // terracottaBlue
-  [76, 50, 35, 255],    // terracottaBrown
-  [76, 82, 42, 255],    // terracottaGreen
-  [142, 60, 46, 255],   // terracottaRed
-  [37, 22, 16, 255],    // terracottaBlack
-  [189, 48, 49, 255],   // dullRed
-  [148, 63, 97, 255],   // dullPink
-  [92, 25, 29, 255],    // darkCrimson
-  [22, 126, 134, 255],  // teal
-  [58, 142, 140, 255],  // darkAqua
-  [86, 44, 62, 255],    // darkDullPink
-  [20, 180, 133, 255],  // brightTeal
-  [100, 100, 100, 255], // deepslateGray
-  [216, 175, 147, 255], // rawIronPink
-  [127, 167, 150, 255]  // lichenGreen
+  null,                 // 0 clear
+  [127, 178, 56, 255],  // 1 paleGreen
+  [247, 233, 163, 255], // 2 paleYellow
+  [199, 199, 199, 255], // 3 whiteGray
+  [255, 0, 0, 255],     // 4 brightRed
+  [160, 160, 255, 255], // 5 palePurple
+  [167, 167, 167, 255], // 6 ironGray
+  [0, 124, 0, 255],     // 7 darkGreen
+  [255, 255, 255, 255], // 8 white
+  [164, 168, 184, 255], // 9 lightBlueGray
+  [151, 109, 77, 255],  // 10 dirtBrown
+  [112, 112, 112, 255], // 11 stoneGray
+  [64, 64, 255, 255],   // 12 waterBlue
+  [143, 119, 72, 255],  // 13 oakTan
+  [255, 252, 245, 255], // 14 offWhite
+  [216, 127, 51, 255],  // 15 orange
+  [178, 76, 216, 255],  // 16 magenta
+  [102, 153, 216, 255], // 17 lightBlue
+  [229, 229, 51, 255],  // 18 yellow
+  [127, 204, 25, 255],  // 19 lime
+  [242, 127, 165, 255], // 20 pink
+  [76, 76, 76, 255],    // 21 gray
+  [153, 153, 153, 255], // 22 lightGray
+  [76, 127, 153, 255],  // 23 cyan
+  [127, 63, 178, 255],  // 24 purple
+  [51, 76, 178, 255],   // 25 blue
+  [102, 76, 51, 255],   // 26 brown
+  [102, 127, 51, 255],  // 27 green
+  [153, 51, 51, 255],   // 28 red
+  [25, 25, 25, 255],    // 29 black
+  [250, 238, 77, 255],  // 30 gold
+  [92, 219, 213, 255],  // 31 diamondBlue
+  [74, 128, 255, 255],  // 32 lapisBlue
+  [0, 217, 58, 255],    // 33 emeraldGreen
+  [129, 86, 49, 255],   // 34 spruceBrown
+  [112, 2, 0, 255],     // 35 darkRed
+  [209, 177, 161, 255], // 36 terracottaWhite
+  [159, 82, 36, 255],   // 37 terracottaOrange
+  [149, 87, 108, 255],  // 38 terracottaMagenta
+  [112, 108, 138, 255], // 39 terracottaLightBlue
+  [186, 133, 36, 255],  // 40 terracottaYellow
+  [103, 117, 53, 255],  // 41 terracottaLime
+  [160, 77, 78, 255],   // 42 terracottaPink
+  [57, 41, 35, 255],    // 43 terracottaGray
+  [135, 107, 98, 255],  // 44 terracottaLightGray
+  [87, 92, 92, 255],    // 45 terracottaCyan
+  [122, 73, 88, 255],   // 46 terracottaPurple
+  [76, 62, 92, 255],    // 47 terracottaBlue
+  [76, 50, 35, 255],    // 48 terracottaBrown
+  [76, 82, 42, 255],    // 49 terracottaGreen
+  [142, 60, 46, 255],   // 50 terracottaRed
+  [37, 22, 16, 255],    // 51 terracottaBlack
+  [189, 48, 49, 255],   // 52 dullRed
+  [148, 63, 97, 255],   // 53 dullPink
+  [92, 25, 29, 255],    // 54 darkCrimson
+  [22, 126, 134, 255],  // 55 teal
+  [58, 142, 140, 255],  // 56 darkAqua
+  [86, 44, 62, 255],    // 57 darkDullPink
+  [20, 180, 133, 255],  // 58 brightTeal
+  [100, 100, 100, 255], // 59 deepslateGray
+  [216, 175, 147, 255], // 60 rawIronPink
+  [127, 167, 150, 255]  // 61 lichenGreen
 ];
 const brightness = {
   lowest: 135 / 255,
@@ -1728,3 +1728,26 @@ const blocks = {
   potted_closed_eyeblossom: 0,
   firefly_bush: 7
 };
+// Custom overrides
+blocks.allium = 16;
+blocks.azure_bluet = 22;
+blocks.blue_orchid = 17;
+blocks.cornflower = 25;
+blocks.dandelion = 18;
+// blocks.golden_dandelion = 30;
+blocks.lily_of_the_valley = 14;
+blocks.oxeye_daisy = 22;
+blocks.poppy = 28;
+blocks.torchflower = 15;
+blocks.orange_tulip = 15;
+blocks.pink_tulip = 20;
+blocks.red_tulip = 28;
+blocks.white_tulip = 22;
+blocks.wither_rose = 29;
+blocks.lilac = 16;
+blocks.peony = 20;
+blocks.pitcher_plant = 23;
+blocks.rose_bush = 28;
+blocks.sunflower = 18;
+blocks.pink_petals = 20;
+blocks.wildflowers = 18;
