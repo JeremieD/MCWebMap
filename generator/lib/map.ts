@@ -102,24 +102,24 @@ function getMapColor(region: Anvil, chunk: Chunk, block: BlockInstance | undefin
   // Tints
   if (name === "grass_block") {
     // Grass color
-    const tint = biomeTintSmooth(region, block.coords, grassTint);
+    const tint = biomeTintDithered(region, block.coords, grassTint);
     if (tint) color = tint;
 
   } else if (name === "short_grass" || name === "tall_grass" || name === "bush" ||
              name === "fern" || name === "large_fern" || name === "sugar_cane") {
     // Plant tint
-    const tint = biomeTintSmooth(region, block.coords, grassTint);
+    const tint = biomeTintDithered(region, block.coords, grassTint);
     color = tintColor(color, tint);
 
   } else if (name === "oak_leaves" || name === "jungle_leaves" || name === "acacia_leaves" ||
              name === "dark_oak_leaves" || name === "mangrove_leaves" || name === "vines") {
     // Foliage color
-    const tint = biomeTintSmooth(region, block.coords, foliageTint);
+    const tint = biomeTintDithered(region, block.coords, foliageTint);
     color = tintColor(color, tint);
 
   } else if (name === "water") {
     // Water color
-    const tint = biomeTintSmooth(region, block.coords, waterTint);
+    const tint = biomeTintDithered(region, block.coords, waterTint);
     color = tintColor(color, tint);
   }
 
@@ -140,33 +140,28 @@ function tintColor(color: number[], tint: number[] | undefined, amount = .5) {
   ];
 }
 
-function biomeTintSmooth(region: Anvil, coords: Coords3d, colorFunction: (biome: string) => number[] | undefined) {
-  const tint = colorFunction(getBiome(region, coords))!;
-  // Offset coordinate of a "circle" of radius 2 around coords.
-  const offsets = [[1,0], [1,1], [0,1], [-1,1], [-1,0], [-1,-1], [0,-1], [1,-1],
-                   [2,-1], [2,0], [2,1], [1,2], [0,2], [-1,2], [-2,1], [-2,0], [-2,-1], [-1,-2], [0,-2], [1,-2]];
-  // Offset coordinate of a "circle" of radius 1 around coords.
-  // const offsets = [[1,0], [1,1], [0,1], [-1,1], [-1,0], [-1,-1], [0,-1], [1,-1]];
+function biomeTintDithered(region: Anvil, coords: Coords3d, colorFunction: (biome: string) => number[] | undefined) {
+  let offsets = [[1,0], [-1,0]];
+  if ((coords[0]+coords[1]) % 2 !== 0) offsets = [[0,1], [0,-1]];
 
-  let numberOfTints = 1;
+  const biomeCounts = {};
+  let biome: string;
 
-  let neighborTint: number[] | undefined;
   for (const offset of offsets) {
     try {
-      neighborTint = colorFunction(getBiome(region, [coords[0]+offset[0], coords[1], coords[2]+offset[1]]));
+      biome = getBiome(region, [coords[0]+offset[0], coords[1], coords[2]+offset[1]]);
     } catch (e) { continue; }
-    if (!neighborTint) continue;
-    numberOfTints++;
-    tint[0] += neighborTint[0];
-    tint[1] += neighborTint[1];
-    tint[2] += neighborTint[2];
+    if (!biome) continue;
+    biomeCounts[biome] ??= 0;
+    biomeCounts[biome]++;
   }
 
-  tint[0] = Math.floor(tint[0]/numberOfTints);
-  tint[1] = Math.floor(tint[1]/numberOfTints);
-  tint[2] = Math.floor(tint[2]/numberOfTints);
+  const biomes = Object.entries(biomeCounts).map(([b, c]) => { return { b: b, c: c } }).sort((a: any, b: any) => b.c - a.c);
 
-  return tint;
+  if (biomes.length > 1) {
+    return tintColor(colorFunction(biomes[0].b)!, colorFunction(biomes[1].b));
+  }
+  return colorFunction(biomes[0].b);
 }
 
 // From mc.wiki/Block_colors#Grass_colors
