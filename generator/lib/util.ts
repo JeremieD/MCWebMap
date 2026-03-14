@@ -8,3 +8,8 @@ export const WORLD_MIN_HEIGHT = -64;
  * `mod(x, n)` is roughly equal to `x % n`.
  */
 export const mod = (x: number, n: number) => ((x % n) + n) % n;
+
+export function round(x: number, p: number = 2) {
+  const f = 10**p;
+  return Math.round(x*f) / f;
+}

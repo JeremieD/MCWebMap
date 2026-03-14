@@ -7,18 +7,6 @@ import { mod, REGION_SIZE, SECTION_SIZE } from "./util.ts";
 
 const IMG_CHANNELS = 4; // RGBA
 
-// TODO:
-// - Check waterloggable blocks / blocks like kelp
-//   - it seems waterlogged blocks are treated as water for map purposes?
-//   - but mca-json is garbage and does not return block state
-//   - so i guess i gotta find another library or code it myself again :/
-// - Swamp color noise
-// - CLI options to output different region boundaries
-// - Fix top border of region tiles being brighter
-// - Add flower colours?
-// - Prettier biome smoothing
-// - fix mca-json parseSection throwing when there is no data. it's cuz the whole section is filled with the same block dumbass -_-
-
 export function generateTile(worldPath: string, regionX: number, regionZ: number) {
   const regionFile = readFileSync(`${worldPath}/region/r.${regionX}.${regionZ}.mca`);
   const region = Anvil.fromBuffer(regionFile.buffer);
@@ -33,7 +21,7 @@ export function generateTile(worldPath: string, regionX: number, regionZ: number
     const status = getStatus(chunk);
     let color: number[] | null | undefined;
 
-    console.log(chunk.chunkKey());
+    // console.log(chunk.chunkKey());
 
     for (let chunkZ = 0; chunkZ < SECTION_SIZE; chunkZ++)
     for (let chunkX = 0; chunkX < SECTION_SIZE; chunkX++) {

@@ -2,7 +2,7 @@ import type { BlockInstance, Coords2d, Coords3d } from "mca-json";
 import { Anvil, Chunk } from "mca-json";
 import { mod, REGION_SIZE, SECTION_SIZE } from "./util.ts";
 
-const chunkCache = {};
+let chunkCache = {};
 function getChunk(region: Anvil, blockCoords: Coords2d) {
   const chunkX = Math.floor(blockCoords[0] / SECTION_SIZE);
   const chunkZ = Math.floor(blockCoords[1] / SECTION_SIZE);
@@ -35,7 +35,7 @@ export function getHighestBlock(chunk: Chunk, coords: Coords2d): BlockInstance {
   return chunk.getBlock([coords[0], y, coords[1]]);
 }
 
-const heightmapTagsCache = {};
+let heightmapTagsCache = {};
 function worldSurfaceHeightmapTag(chunk: Chunk) {
   const chunkKey = chunk.chunkKey();
   if (!chunkKey) throw new Error("Invalid chunk");
@@ -49,7 +49,7 @@ function worldSurfaceHeightmapTag(chunk: Chunk) {
   return heightmap;
 }
 
-const sectionTagsCache = {};
+let sectionTagsCache = {};
 function sectionTag(chunk: Chunk, sectionY: number) {
   const chunkKey = chunk.chunkKey();
   if (!chunkKey) throw new Error("Invalid chunk");
@@ -69,7 +69,7 @@ export function getStatus(chunk: Chunk) {
   return chunk.toObject().compound.Status.string;
 }
 
-const biomeCache = {};
+let biomeCache = {};
 /**
  * Returns the biome name at a given (x, y, z) world coordinate.
  * @param chunk
@@ -131,4 +131,11 @@ export function getDepth(chunk: Chunk, block: BlockInstance): number {
     }
   } while (current.name === block.name);
   return depth;
+}
+
+export function clearCache() {
+  chunkCache = {};
+  heightmapTagsCache = {};
+  sectionTagsCache = {};
+  biomeCache = {};
 }
