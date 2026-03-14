@@ -1,5 +1,7 @@
 .DS_Store
-dist/resources/js/*
-dist/resources/css/*
+viewer/dist/resources/js/*
+viewer/dist/resources/css/*
+viewer/dist/resources/graphics/overworld/*
 node_modules/
-/generator/output
+generator/output
+ref
