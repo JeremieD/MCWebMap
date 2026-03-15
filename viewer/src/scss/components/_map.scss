@@ -9,110 +9,25 @@ jej-map {
   overflow: hidden;
   user-select: none;
 
-  .tiles {
-    display: grid;
+  .layer {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
+  }
+
+  .tiles {
+    display: grid;
     transform-origin: 0 0;
     scale: var(--z);
     translate: var(--x) var(--y);
     pointer-events: none;
   }
-
-  .hud { position: absolute; }
 }
 
 jej-map:not(.dragging) {
   cursor: auto;
   transition: .2s scale ease,
               .2s translate ease;
-}
-
-jej-pin {
-  display: block;
-  position: absolute;
-  background-image: url(/resources/graphics/icons/pin.svg);
-  background-repeat: no-repeat;
-  aspect-ratio: 128 / 179;
-  width: 2rem;
-  height: auto;
-  translate: -50% -99%;
-  pointer-events: none;
-  left: calc(var(--x));
-  top: calc(var(--y));
-  transition: .2s ease translate;
-}
-jej-pin.answer {
-  background-image: url(/resources/graphics/icons/pin-answer.svg);
-}
-:not(.dragging)>jej-pin {
-  transition: .2s translate ease,
-              .2s left ease,
-              .2s top ease;
-}
-
-.confirmed mkg-map[interactive] { pointer-events: none; }
-.confirmed #q-confirm { display: none; }
-
-jej-pin::before {
-  display: block;
-  position: absolute;
-  content: "";
-  width: 1rem;
-  height: .5rem;
-  border-radius: 50%;
-  background-color: black;
-  filter: blur(.25rem);
-  translate: -50% -50%;
-  left: 50%;
-  top: 100%;
-  opacity: .75;
-  transition: .2s ease top;
-  z-index: -2;
-}
-jej-pin[anchored]::after {
-  display: block;
-  position: absolute;
-  content: "";
-  width: 2px;
-  height: 2px;
-  border-radius: 50%;
-  background-color: white;
-  outline: .5px solid black;
-  translate: -50% -50%;
-  left: 50%;
-  top: 100%;
-  z-index: -1;
-  opacity: 0;
-  transition: .2s ease top,
-              .2s ease opacity;
-}
-
-.dragging jej-pin:not(:is(.round, .guess))[anchored] { translate: -50% calc(-99% - .25rem); }
-.dragging jej-pin[anchored]::before { top: calc(100% + .25rem); }
-.dragging jej-pin[anchored]::after {
-  top: calc(100% + .25rem);
-  opacity: 1;
-}
-
-jej-pin:is(.round, .guess) {
-  background: none;
-  border: 30px solid white;
-  outline: 6px solid rgba(0,0,0,.33);
-  width: 76px;
-  height: 76px;
-  border-radius: 50%;
-  translate: -50% -50%;
-}
-jej-pin:is(.round, .guess)::after, jej-pin:is(.round, .guess)::before { content: none !important; }
-
-jej-pin.guess {
-  background: black;
-  width: 24px;
-  height: 24px;
-  border-width: 8px;
-  opacity: .75;
 }
