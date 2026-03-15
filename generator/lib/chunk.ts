@@ -118,7 +118,7 @@ function getSectionY(yByte: number) {
   return yByte;
 }
 
-export function getDepth(chunk: Chunk, block: BlockInstance): number {
+export function getDepth(chunk: Chunk, block: BlockInstance, max = 10): number {
   let depth = 0;
   let current = block;
   do {
@@ -129,7 +129,7 @@ export function getDepth(chunk: Chunk, block: BlockInstance): number {
       console.error(current, e);
       break;
     }
-  } while (current.name === block.name);
+  } while (current.name === block.name && depth < max);
   return depth;
 }
 
