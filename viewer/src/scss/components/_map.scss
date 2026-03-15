@@ -24,6 +24,14 @@ jej-map {
     translate: var(--x) var(--y);
     pointer-events: none;
   }
+
+  .hud {
+    output {
+      padding: .25em;
+      background-color: beige;
+      opacity: .875;
+    }
+  }
 }
 
 jej-map:not(.dragging) {
