@@ -1,17 +1,19 @@
 jej-pin {
-  --sprite-x: 0;
-  --sprite-y: 0;
-
   position: absolute;
+  translate: var(--x) var(--y);
+  transition: .2s ease scale,
+              .2s ease opacity;
 
+  &.hidden {
+    scale: .5;
+    opacity: 0;
+  }
 
-  background-image: url(../graphics/map_icons.webp);
-  background-size: 1600%;
-  background-position-x: calc(-100% * var(--sprite-x));
-  background-position-y: calc(-100% * var(--sprite-y));
-  height: 16px; // Safari can't deal with half pixel size sprites. grrr :/
-  width:  16px;
-  translate: calc(var(--x) - 50%) calc(var(--y) - 50%);
+  &:not(.detailed) label {
+    translate: -50% -50% !important;
+    scale: .5;
+    opacity: 0;
+  }
 
   label {
     position: absolute;
@@ -23,14 +25,23 @@ jej-pin {
     max-width: 16ch;
     text-wrap: balance;
     color: beige;
-    text-shadow: 2px  2px 0 rgba(0,0,0,.25),
-                2px -2px 0 rgba(0,0,0,.25),
-                -2px  2px 0 rgba(0,0,0,.25),
-                -2px -2px 0 rgba(0,0,0,.25),
-                0 0 4px rgba(0,0,0,.25),
-                0 0 8px rgba(0,0,0,.25),
-                0 0 16px rgba(0,0,0,.75);
+    line-height: 1;
+    text-shadow: 2px  2px 0    rgba(0,0,0,.25),
+                 2px -2px 0    rgba(0,0,0,.25),
+                -2px  2px 0    rgba(0,0,0,.25),
+                -2px -2px 0    rgba(0,0,0,.25),
+                 0    0   4px  rgba(0,0,0,.25),
+                 0    0   8px  rgba(0,0,0,.25),
+                 0    0   16px rgba(0,0,0,.75);
+    transition: .2s ease all;
   }
+
+  .marker+label     { translate: -50% .5em; }
+  .marker+label.top { translate: -50% calc(-100% - 0.5em); }
+
+  &.topo {}
+
+  &.odo {}
 
   &.hydro {
     label {
@@ -39,50 +50,75 @@ jej-pin {
       letter-spacing: .1em;
     }
   }
+
+  .card { display: none; }
 }
 
-// [data-pin="point-big"]   { --x: 0; }
-[data-pin="point-small"]    { --sprite-x: 1; }
-[data-pin="marker-white"]   { --sprite-x: 2; }
-[data-pin="marker-green"]   { --sprite-x: 3; }
-[data-pin="marker-red"]     { --sprite-x: 4; }
-[data-pin="marker-blue"]    { --sprite-x: 5; }
-[data-pin="marker-pink"]    { --sprite-x: 6; }
-[data-pin="marker-orange"]  { --sprite-x: 7; }
-[data-pin="marker-yellow"]  { --sprite-x: 8; }
-[data-pin="marker-cyan"]    { --sprite-x: 9; }
-[data-pin="triangle-red"]   { --sprite-x: 10; }
-[data-pin="triangle-green"] { --sprite-x: 11; }
-[data-pin="x-white"]        { --sprite-x: 12; }
-[data-pin="x-red"]          { --sprite-x: 13; }
-[data-pin="x-red-be"]       { --sprite-x: 14; }
-[data-pin="sign"]           { --sprite-x: 15; }
+.marker {
+  --sprite-x: 0;
+  --sprite-y: 0;
 
-[data-pin="banner-white"]      { --sprite-x: 0;  --sprite-y: 1; }
-[data-pin="banner-orange"]     { --sprite-x: 1;  --sprite-y: 1; }
-[data-pin="banner-magenta"]    { --sprite-x: 2;  --sprite-y: 1; }
-[data-pin="banner-light-blue"] { --sprite-x: 3;  --sprite-y: 1; }
-[data-pin="banner-yellow"]     { --sprite-x: 4;  --sprite-y: 1; }
-[data-pin="banner-green"]      { --sprite-x: 5;  --sprite-y: 1; }
-[data-pin="banner-pink"]       { --sprite-x: 6;  --sprite-y: 1; }
-[data-pin="banner-grey"]       { --sprite-x: 7;  --sprite-y: 1; }
-[data-pin="banner-light-grey"] { --sprite-x: 8;  --sprite-y: 1; }
-[data-pin="banner-cyan"]       { --sprite-x: 9;  --sprite-y: 1; }
-[data-pin="banner-purple"]     { --sprite-x: 10; --sprite-y: 1; }
-[data-pin="banner-blue"]       { --sprite-x: 11; --sprite-y: 1; }
-[data-pin="banner-brown"]      { --sprite-x: 12; --sprite-y: 1; }
-[data-pin="banner-green"]      { --sprite-x: 13; --sprite-y: 1; }
-[data-pin="banner-red"]        { --sprite-x: 14; --sprite-y: 1; }
-[data-pin="banner-black"]      { --sprite-x: 15; --sprite-y: 1; }
+  position: absolute;
+  height: 16px; // Safari can't deal with half pixel size sprites. grrr :/
+  width:  16px;
+  background-image: url(../graphics/map_icons.webp);
+  background-size: 1600%;
+  background-position-x: calc(-100% * var(--sprite-x));
+  background-position-y: calc(-100% * var(--sprite-y));
+  translate: -50% -50%;
 
-[data-pin="tial-chambers"]    { --sprite-x: 0; --sprite-y: 2; }
-[data-pin="ocean-monument"]   { --sprite-x: 1; --sprite-y: 2; }
-[data-pin="jungle-temple"]    { --sprite-x: 2; --sprite-y: 2; }
-[data-pin="swamp-hut"]        { --sprite-x: 3; --sprite-y: 2; }
-[data-pin="woodland-mansion"] { --sprite-x: 4; --sprite-y: 2; }
+  // &.point-big   { --sprite-x: 0; }
+  &.point-small    { --sprite-x: 1; }
+  &.pointer,
+  &.pointer-white   { --sprite-x: 2; }
+  &.pointer-green   { --sprite-x: 3; }
+  &.pointer-red     { --sprite-x: 4; }
+  &.pointer-blue    { --sprite-x: 5; }
+  &.pointer-pink    { --sprite-x: 6; }
+  &.pointer-orange  { --sprite-x: 7; }
+  &.pointer-yellow  { --sprite-x: 8; }
+  &.pointer-cyan    { --sprite-x: 9; }
+  &.triangle-red   { --sprite-x: 10; }
+  &.triangle,
+  &.triangle-green { --sprite-x: 11; }
+  &.x-white        { --sprite-x: 12; }
+  &.x,
+  &.x-red          { --sprite-x: 13; }
+  &.x-red-be       { --sprite-x: 14; }
+  &.sign           { --sprite-x: 15; }
 
-[data-pin="village-plains"]  { --sprite-x: 0; --sprite-y: 3; }
-[data-pin="village-savanna"] { --sprite-x: 1; --sprite-y: 3; }
-[data-pin="village-desert"]  { --sprite-x: 2; --sprite-y: 3; }
-[data-pin="village-taiga"]   { --sprite-x: 3; --sprite-y: 3; }
-[data-pin="village-snowy"]   { --sprite-x: 4; --sprite-y: 3; }
+  &.banner,
+  &.banner-white      { --sprite-x: 0;  --sprite-y: 1; }
+  &.banner-orange     { --sprite-x: 1;  --sprite-y: 1; }
+  &.banner-magenta    { --sprite-x: 2;  --sprite-y: 1; }
+  &.banner-light-blue { --sprite-x: 3;  --sprite-y: 1; }
+  &.banner-yellow     { --sprite-x: 4;  --sprite-y: 1; }
+  &.banner-green      { --sprite-x: 5;  --sprite-y: 1; }
+  &.banner-pink       { --sprite-x: 6;  --sprite-y: 1; }
+  &.banner-grey       { --sprite-x: 7;  --sprite-y: 1; }
+  &.banner-light-grey { --sprite-x: 8;  --sprite-y: 1; }
+  &.banner-cyan       { --sprite-x: 9;  --sprite-y: 1; }
+  &.banner-purple     { --sprite-x: 10; --sprite-y: 1; }
+  &.banner-blue       { --sprite-x: 11; --sprite-y: 1; }
+  &.banner-brown      { --sprite-x: 12; --sprite-y: 1; }
+  &.banner-green      { --sprite-x: 13; --sprite-y: 1; }
+  &.banner-red        { --sprite-x: 14; --sprite-y: 1; }
+  &.banner-black      { --sprite-x: 15; --sprite-y: 1; }
+
+  &.trial-chamber    { --sprite-x: 0; --sprite-y: 2; }
+  &.monument,
+  &.ocean-monument   { --sprite-x: 1; --sprite-y: 2; }
+  &.temple,
+  &.jungle-temple    { --sprite-x: 2; --sprite-y: 2; }
+  &.hut,
+  &.swamp-hut        { --sprite-x: 3; --sprite-y: 2; }
+  &.mansion,
+  &.woodland-mansion { --sprite-x: 4; --sprite-y: 2; }
+
+  &.village,
+  &.village-plains  { --sprite-x: 0; --sprite-y: 3; }
+  &.village-savanna { --sprite-x: 1; --sprite-y: 3; }
+  &.village-desert  { --sprite-x: 2; --sprite-y: 3; }
+  &.village-taiga   { --sprite-x: 3; --sprite-y: 3; }
+  &.village-snowy   { --sprite-x: 4; --sprite-y: 3; }
+}

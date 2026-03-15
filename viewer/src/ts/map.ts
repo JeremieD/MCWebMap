@@ -70,14 +70,14 @@ export class JejMap extends HTMLElement {
       for (let x = bounds.west;  x <= bounds.east;  x++)
       for (let z = bounds.north; z <= bounds.south; z++) {
         const url = `data/overworld/${x}.${z}.webp`;
+        const img = document.createElement("img");
+        if (Math.abs(x) <= 3 && Math.abs(z) <= 3) img.loading = "lazy";
+        img.style.gridColumn = (x - bounds.west  + 1).toString();
+        img.style.gridRow    = (z - bounds.north + 1).toString();
+        img.src = url;
+        this.#tiles.append(img);
         fetch(url, { method: "HEAD" }).then(async response => {
-          if (!response.ok) return; // Ignore if not HTTP 200
-          const img = document.createElement("img");
-          // img.loading = "lazy";
-          img.src = url;
-          img.style.gridColumn = (x - bounds.west  + 1).toString();
-          img.style.gridRow    = (z - bounds.north + 1).toString();
-          this.#tiles.append(img);
+          if (!response.ok) img.remove();
         });
       }
 
@@ -153,13 +153,10 @@ export class JejMap extends HTMLElement {
     this.#tiles.style.setProperty("--x", this.#zoom * (-this.#panX + this.width/2) + offsetX + "px");
     this.#tiles.style.setProperty("--y", this.#zoom * (-this.#panY + this.height/2) + offsetY + "px");
     for (const pin of Array.from(this.#pins.querySelectorAll("jej-pin")) as JejPin[]) {
-      if (pin.anchored) {
-        pin.style.setProperty("--x", this.#zoom*(this.width/2) + offsetX + "px");
-        pin.style.setProperty("--y", this.#zoom*(this.height/2) + offsetY + "px");
-      } else {
-        pin.style.setProperty("--x", this.#zoom*(this.origin[0] + pin.x - this.#panX + this.width/2) + offsetX + "px");
-        pin.style.setProperty("--y", this.#zoom*(this.origin[1] + pin.y - this.#panY + this.height/2) + offsetY + "px");
-      }
+      pin.classList.toggle("hidden", this.#zoom >= pin.maxZoom || this.#zoom < pin.minZoom);
+      pin.classList.toggle("detailed", this.#zoom >= pin.detailedZoom);
+      pin.style.setProperty("--x", this.#zoom*(this.origin[0] + pin.x - this.#panX + this.width/2) + offsetX + "px");
+      pin.style.setProperty("--y", this.#zoom*(this.origin[1] + pin.y - this.#panY + this.height/2) + offsetY + "px");
     }
   }
 
