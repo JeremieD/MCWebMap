@@ -141,8 +141,7 @@ function tintColor(color: number[], tint: number[] | undefined, amount = .5) {
 }
 
 function biomeTintDithered(region: Anvil, coords: Coords3d, colorFunction: (biome: string) => number[] | undefined) {
-  let offsets = [[1,0], [-1,0]];
-  if ((coords[0]+coords[1]) % 2 !== 0) offsets = [[0,1], [0,-1]];
+  let offsets = [[0,2], [2,0], [0,-2], [-2,0]];
 
   const biomeCounts = {};
   let biome: string;
@@ -158,10 +157,8 @@ function biomeTintDithered(region: Anvil, coords: Coords3d, colorFunction: (biom
 
   const biomes = Object.entries(biomeCounts).map(([b, c]) => { return { b: b, c: c } }).sort((a: any, b: any) => b.c - a.c);
 
-  if (biomes.length > 1) {
-    return tintColor(colorFunction(biomes[0].b)!, colorFunction(biomes[1].b));
-  }
-  return colorFunction(biomes[0].b);
+  if (biomes.length <= 1) return colorFunction(biomes[0].b);
+  return tintColor(colorFunction(biomes[0].b)!, colorFunction(biomes[1].b));
 }
 
 // From mc.wiki/Block_colors#Grass_colors
