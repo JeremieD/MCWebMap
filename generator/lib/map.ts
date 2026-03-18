@@ -387,7 +387,7 @@ const foliageTint = (biome: string) => {
   console.error("No tint defined for " + biome);
   return;
 };
-// From mc.wiki/Block_colors#Bedrock_Edition
+// Mostly custom but inspired by mc.wiki/Block_colors#Water_colors
 const waterTint = (biome: string) => {
   biome = biome.split(":")[1];
   switch (biome) {
@@ -402,21 +402,38 @@ const waterTint = (biome: string) => {
     case "dripstone_caves":
     case "lush_caves":
     case "deep_dark":
-      return [68, 175, 245, 255]; // #44AFF5
-    case "desert":
-      return [50, 165, 152, 255]; // #32A598
+    case "river":
     case "windswept_hills":
-      return [0, 123, 247, 255]; // #007BF7
     case "forest":
-      return [30, 151, 242, 255]; // #1E97F2
     case "flower_forest":
-      return [32, 163, 204, 255]; // #20A3CC
+    case "birch_forest":
+    case "old_growth_birch_forest":
+    case "dark_forest":
+    case "mushroom_fields":
+    case "beach":
+    case "desert":
+    case "jungle":
+    case "bamboo_jungle":
+    case "sparse_jungle":
+    case "stony_shore":
+    case "windswept_forest":
+    case "windswept_gravelly_hills":
+    case "savanna":
+    case "windswept_savanna":
+    case "savanna_plateau":
+    case "badlands":
+    case "eroded_badlands":
+    case "wooded_badlands":
     case "taiga":
-      return [40, 112, 130, 255]; // #287082
+    case "old_growth_spruce_taiga":
+    case "old_growth_pine_taiga":
+    case "ocean":
+    case "deep_ocean":
+      return [8, 100, 248, 255]; // #0864F8
     case "swamp":
       return [76, 101, 89, 255]; // #4C6559
-    case "river":
-      return [0, 132, 255, 255]; // #0084FF
+    case "mangrove_swamp":
+      return [58, 122, 106, 255]; // #3A7A6A
     case "nether_wastes":
     case "crimson_forest":
     case "warped_forest":
@@ -424,57 +441,10 @@ const waterTint = (biome: string) => {
       return [144, 89, 87, 255]; // #905957
     case "the_end":
       return [98, 82, 158, 255]; // #62529E
-    case "frozen_river":
-      return [24, 83, 144, 255]; // #185390
-    case "snowy_plains":
-    case "ice_spikes":
-      return [20, 85, 155, 255]; // #14559B
-    case "mushroom_fields":
-      return [138, 137, 151, 255]; // #8A8997
-    case "beach":
-      return [21, 124, 171, 255]; // #157CAB
-    case "jungle":
-    case "bamboo_jungle":
-      return [20, 162, 197, 255]; // #14A2C5
-    case "sparse_jungle":
-      return [13, 138, 227, 255] // rgba(13, 138, 22;7, 1)
-    case "stony_shore":
-      return [13, 103, 187, 255]; // #0D67BB
-    case "snowy_beach":
-      return [20, 99, 165, 255]; // #1463A5
-    case "birch_forest":
-      return [6, 119, 206, 255]; // #0677CE
-    case "old_growth_birch_forest":
-      return [10, 116, 196, 255];; // #0A74C4
-    case "dark_forest":
-      return [59, 108, 209, 255]; // #3B6CD1
-    case "snowy_taiga":
-      return [32, 94, 131, 255]; // #205E83
-    case "old_growth_spruce_taiga":
-    case "old_growth_pine_taiga":
-      return [45, 109, 119, 255]; // #2D6D77
-    case "windswept_forest":
-    case "windswept_gravelly_hills":
-      return [14, 99, 171, 255]; // #0E63AB
-    case "savanna":
-      return [44, 139, 156, 255]; // #2C8B9C
-    case "windswept_savanna":
-    case "savanna_plateau":
-      return [37, 144, 168, 255]; // #2590A8
-    case "badlands":
-      return [78, 127, 129, 255]; // #4E7F81
-    case "eroded_badlands":
-    case "wooded_badlands":
-      return [73, 127, 153, 255]; // #497F99
-    case "mangrove_swamp":
-      return [58, 122, 106, 255]; // #3A7A6A
     case "cherry_grove":
       return [93, 183, 239, 255]; // #5DB7EF
     case "pale_garden":
       return [118, 136, 157, 255]; // #76889D
-    case "ocean":
-    case "deep_ocean":
-      return [23, 135, 212, 255]; // #1787D4
     case "warm_ocean":
     case "deep_warm_ocean":
       return [2, 176, 229, 255]; // #02B0E5
@@ -486,6 +456,11 @@ const waterTint = (biome: string) => {
       return [32, 128, 201, 255]; // #2080C9
     case "frozen_ocean":
     case "deep_frozen_ocean":
+    case "frozen_river":
+    case "snowy_plains":
+    case "ice_spikes":
+    case "snowy_beach":
+    case "snowy_taiga":
       return [37, 112, 181, 255]; // #2570B5
   }
   console.error("No tint defined for " + biome);
