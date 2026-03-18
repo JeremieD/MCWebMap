@@ -118,7 +118,7 @@ function getSectionY(yByte: number) {
   return yByte;
 }
 
-export function getDepth(chunk: Chunk, block: BlockInstance, max = 10): number {
+export function getWaterDepth(chunk: Chunk, block: BlockInstance, max = 10): number {
   let depth = 0;
   let current = block;
   do {
@@ -129,7 +129,7 @@ export function getDepth(chunk: Chunk, block: BlockInstance, max = 10): number {
       console.error(current, e);
       break;
     }
-  } while (current.name === block.name && depth < max);
+  } while (isWater(current) && depth < max);
   return depth;
 }
 
@@ -138,4 +138,18 @@ export function clearCache() {
   heightmapTagsCache = {};
   sectionTagsCache = {};
   biomeCache = {};
+}
+
+const waterEquivalent = [
+  "minecraft:water",
+  "minecraft:kelp_plant", "minecraft:kelp",
+  "minecraft:bubble_column",
+  "minecraft:tall_seagrass", "minecraft:seagrass",
+];
+
+export function isWater(block: BlockInstance) {
+  for (const name of waterEquivalent) {
+    if (block.name === name) return true;
+  }
+  return false;
 }

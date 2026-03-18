@@ -2,7 +2,7 @@ import type { BlockInstance, Chunk, Coords3d } from "mca-json";
 import { Anvil } from "mca-json";
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
-import { getBiome, getDepth, getHighestBlock, getStatus } from "./chunk.ts";
+import { getBiome, getWaterDepth, getHighestBlock, getStatus, isWater } from "./chunk.ts";
 import { mod, REGION_SIZE, SECTION_SIZE } from "./util.ts";
 
 const IMG_CHANNELS = 4; // RGBA
@@ -47,8 +47,8 @@ export function generateTile(worldPath: string, regionX: number, regionZ: number
 
         // Shading
         let shade = brightness.normal;
-        if (surface.name === "minecraft:water") { // Depth-shading
-          const depth = getDepth(chunk, surface);
+        if (isWater(surface)) { // Depth-shading
+          const depth = getWaterDepth(chunk, surface);
           if (depth > 9) shade = brightness.low;
           else if (depth > 6 && ((regionX+regionZ) % 2 !== 0)) shade = brightness.low;
           else if (depth > 4) shade = brightness.normal;
@@ -117,7 +117,7 @@ function getMapColor(region: Anvil, chunk: Chunk, block: BlockInstance | undefin
     const tint = biomeTintDithered(region, block.coords, foliageTint);
     color = tintColor(color, tint);
 
-  } else if (name === "water") {
+  } else if (isWater(block)) {
     // Water color
     const tint = biomeTintDithered(region, block.coords, waterTint);
     color = tintColor(color, tint);
@@ -1758,3 +1758,4 @@ blocks.rose_bush = 28;
 blocks.sunflower = 18;
 blocks.pink_petals = 20;
 blocks.wildflowers = 18;
+blocks.frogspawn = 0;
