@@ -1,3 +1,6 @@
 :root {
   font-family: MC7, monospace;
+  touch-action: none;
 }
+
+body { overflow: hidden; }

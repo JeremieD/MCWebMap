@@ -17,13 +17,7 @@ jej-map {
     height: 100%;
   }
 
-  .tiles {
-    display: grid;
-    transform-origin: 0 0;
-    scale: var(--z);
-    translate: var(--x) var(--y);
-    pointer-events: none;
-  }
+  .canvas { pointer-events: none; }
 
   .hud {
     output {

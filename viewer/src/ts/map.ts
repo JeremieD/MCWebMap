@@ -13,11 +13,13 @@ export class JejMap extends HTMLElement {
   #offsetX = .5;
   #offsetY = .5;
   #src = "";
+  #tileRequests: { [regionKey: string]: Promise<ImageBitmap | void> } = {};
+  #tiles: { [regionKey: string]: ImageBitmap } = {};
 
   // Layers
-  #hud:   HTMLDivElement;
-  #pins:  HTMLDivElement;
-  #tiles: HTMLDivElement;
+  #hud:    HTMLDivElement;
+  #pins:   HTMLDivElement;
+  #canvas: CanvasRenderingContext2D;
 
   // HUD Elements
   #coords: HTMLOutputElement;
@@ -40,9 +42,14 @@ export class JejMap extends HTMLElement {
     this.addEventListener("pointerleave",  this.#upHandler,    { passive: true });
     this.addEventListener("wheel",         this.#wheelHandler, { passive: true });
 
-    this.#hud   = this.querySelector(".hud")!;
-    this.#pins  = this.querySelector(".pins")!;
-    this.#tiles = this.querySelector(".tiles")!;
+    const canvasElement = this.querySelector<HTMLCanvasElement>(".canvas")!;
+    canvasElement.width = innerWidth;
+    canvasElement.height = innerHeight;
+
+    this.#hud    = this.querySelector(".hud")!;
+    this.#pins   = this.querySelector(".pins")!;
+    this.#canvas = canvasElement.getContext("2d")!;
+    this.#canvas.imageSmoothingEnabled = false;
 
     this.#coords = document.getElementById("coords")! as HTMLOutputElement;
   }
@@ -63,35 +70,19 @@ export class JejMap extends HTMLElement {
       this.width  = colCount * REGION_SIZE;
       this.height = rowCount * REGION_SIZE;
 
-      this.#tiles.style.gridTemplateColumns = `repeat(${colCount}, ${REGION_SIZE}px)`;
-      this.#tiles.style.gridTemplateRows = `repeat(${rowCount}, ${REGION_SIZE}px)`;
-
-      // Tile data
-      for (let x = bounds.west;  x <= bounds.east;  x++)
-      for (let z = bounds.north; z <= bounds.south; z++) {
-        const url = `data/overworld/${x}.${z}.webp`;
-        const img = document.createElement("img");
-        if (Math.abs(x) <= 3 && Math.abs(z) <= 3) img.loading = "lazy";
-        img.style.gridColumn = (x - bounds.west  + 1).toString();
-        img.style.gridRow    = (z - bounds.north + 1).toString();
-        img.src = url;
-        this.#tiles.append(img);
-        fetch(url, { method: "HEAD" }).then(async response => {
-          if (!response.ok) img.remove();
-        });
-      }
-
       // POI data
       for (const poi of data.overworld.pois) {
         const pin = new JejPin(poi);
         this.#pins.append(pin);
       }
 
-      this.panX(-bounds.west*REGION_SIZE, false);
-      this.panY(-bounds.north*REGION_SIZE, false);
+      this.panX(-bounds.west*REGION_SIZE);
+      this.panY(-bounds.north*REGION_SIZE);
       this.zoom(.75);
     });
 
+    // Start drawing
+    requestAnimationFrame(_ => { this.#draw() } );
   }
 
   #downHandler(e: PointerEvent) {
@@ -103,8 +94,8 @@ export class JejMap extends HTMLElement {
   }
 
   #moveHandler(e: PointerEvent) {
-    const clientPos = this.fromViewSpace(e.clientX, e.clientY);
-    this.#coords.textContent = `${Math.floor(clientPos.x - this.origin[0])}, ${Math.floor(clientPos.y - this.origin[1])}`;
+    const { x, y } = this.fromViewSpace(e.clientX, e.clientY);
+    this.#coords.textContent = `${Math.floor(x - this.origin[0])}, ${Math.floor(y - this.origin[1])}`;
 
     const i = this.#evCache.findIndex(e2 => e2.pointerId === e.pointerId);
     this.#evCache[i] = e;
@@ -116,9 +107,9 @@ export class JejMap extends HTMLElement {
       this.#prevDiff = diff;
 
     } else if (this.#evCache.length === 1) { // Pan
-      const dx = clientPos.x - this.#pointerOriginX;
-      const dy = clientPos.y - this.#pointerOriginY;
-      this.panX(this.#panX - dx, false);
+      const dx = x - this.#pointerOriginX;
+      const dy = y - this.#pointerOriginY;
+      this.panX(this.#panX - dx);
       this.panY(this.#panY - dy);
     }
   }
@@ -132,32 +123,60 @@ export class JejMap extends HTMLElement {
 
   #wheelHandler(e: WheelEvent) {
     let { x, y } = this.fromViewSpace(e.clientX, e.clientY);
-    this.panX(x, false);
-    this.panY(y, false);
-    this.zoom(this.#zoom + e.deltaY*this.#zoom/100, false);
+    this.panX(x);
+    this.panY(y);
+    this.zoom(this.#zoom + e.deltaY*this.#zoom/100);
     const rect = this.getBoundingClientRect();
     ({ x, y } = this.fromViewSpace(rect.width - e.clientX, rect.height - e.clientY));
-    this.panX(x, false);
+    this.panX(x);
     this.panY(y);
   }
 
-  draw() {
+  #draw() {
     const rect = this.getBoundingClientRect();
-    this.style.setProperty("--z", this.#zoom.toString());
-    // this.#tiles.style.setProperty("--w", this.#zoom * this.width + "px");
-    // this.#tiles.style.setProperty("--h", this.#zoom * this.height + "px");
     const offsetX = rect.width*this.#offsetX - this.#zoom*this.width/2;
     const offsetY = rect.height*this.#offsetY - this.#zoom*this.height/2;
-    // this.#tiles.style.setProperty("--offset-x", offsetX + "px");
-    // this.#tiles.style.setProperty("--offset-y", offsetY + "px");
-    this.#tiles.style.setProperty("--x", this.#zoom * (-this.#panX + this.width/2) + offsetX + "px");
-    this.#tiles.style.setProperty("--y", this.#zoom * (-this.#panY + this.height/2) + offsetY + "px");
+
+    // Pins
     for (const pin of Array.from(this.#pins.querySelectorAll("jej-pin")) as JejPin[]) {
       pin.classList.toggle("hidden", this.#zoom >= pin.maxZoom || this.#zoom < pin.minZoom);
       pin.classList.toggle("detailed", this.#zoom >= pin.detailedZoom);
       pin.style.setProperty("--x", this.#zoom*(this.origin[0] + pin.x - this.#panX + this.width/2) + offsetX + "px");
       pin.style.setProperty("--y", this.#zoom*(this.origin[1] + pin.y - this.#panY + this.height/2) + offsetY + "px");
     }
+
+    // Canvas
+    this.#canvas.clearRect(0, 0, rect.width, rect.height); // Clear
+    const topLeft  = this.fromViewSpace(0, 0);
+    const botRight = this.fromViewSpace(rect.right, rect.bottom);
+    const effectiveBounds = {
+      north: Math.floor((topLeft.y  - this.origin[1]) / 512),
+      west:  Math.floor((topLeft.x  - this.origin[0]) / 512),
+      east:  Math.floor((botRight.x - this.origin[0]) / 512),
+      south: Math.floor((botRight.y - this.origin[1]) / 512)
+    };
+
+    for (let x = effectiveBounds.west;  x <= effectiveBounds.east;  x++)
+    for (let z = effectiveBounds.north; z <= effectiveBounds.south; z++) {
+      const regionKey = `${x}.${z}`;
+      if (!this.#tileRequests[regionKey]) {
+        this.#tileRequests[regionKey] = fetch(`data/overworld/${regionKey}.webp`)
+        .then(async (res: Response) => {
+          if (!res.ok) return;
+          this.#tiles[regionKey] = await createImageBitmap(await res.blob());
+        });
+      }
+      if (!this.#tiles[regionKey]) continue;
+
+      const regionX = this.#zoom * (this.origin[0] + x*512 - this.#panX + this.width/2) + offsetX;
+      const regionY = this.#zoom * (this.origin[1] + z*512 - this.#panY + this.height/2) + offsetY;
+      const regionWidth = this.#zoom * 512;
+      const regionHeight = regionWidth;
+
+      this.#canvas.drawImage(this.#tiles[regionKey]!, regionX, regionY, regionWidth, regionHeight);
+    }
+
+    requestAnimationFrame(_ => { this.#draw() });
   }
 
   fromViewSpace(clientX: number, clientY: number) {
@@ -168,37 +187,25 @@ export class JejMap extends HTMLElement {
     };
   }
 
-  panX(x: number, draw = true): number | void {
+  panX(x: number): number | void {
     if (x === undefined) return this.#panX;
     this.#panX = x;
     if (this.#panX < 0) this.#panX = 0;
     if (this.#panX > this.width) this.#panX = this.width;
-    if (draw) {
-      this.draw();
-      this.dispatchEvent(new Event("input"));
-    }
   }
 
-  panY(y: number, draw = true): number | void {
+  panY(y: number): number | void {
     if (y === undefined) return this.#panY;
     this.#panY = y;
     if (this.#panY < 0) this.#panY = 0;
     if (this.#panY > this.height) this.#panY = this.height;
-    if (draw) {
-      this.draw();
-      this.dispatchEvent(new Event("input"));
-    }
   }
 
-  zoom(z: number, draw = true): number | void {
+  zoom(z: number): number | void {
     if (z === undefined) return this.#zoom;
     this.#zoom = z;
     if (this.#zoom < this.minZoom) this.#zoom = this.minZoom;
     if (this.#zoom > this.maxZoom) this.#zoom = this.maxZoom;
-    if (draw) {
-      this.draw();
-      this.dispatchEvent(new Event("input"));
-    }
   }
 
   get offsetX() { return this.#offsetX; }
@@ -208,7 +215,6 @@ export class JejMap extends HTMLElement {
     this.#panX = this.width/2;
     this.#panY = this.height/2;
     this.#zoom = 1;
-    this.draw();
   }
 
   autoFrame(...pins: JejPin[]) {
