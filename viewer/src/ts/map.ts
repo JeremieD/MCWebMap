@@ -1,4 +1,5 @@
 import { JejPin } from "./pin";
+import { isMac, normalizeWheel } from "./utilities";
 
 const REGION_SIZE = 512;
 
@@ -7,6 +8,7 @@ export class JejMap extends HTMLElement {
   #prevDiff = -1;
   #pointerOriginX = 0;
   #pointerOriginY = 0;
+  #scrollFactor = isMac ? .01 : .25;
   #zoom = 1;
   #panX = 256;
   #panY = 256;
@@ -122,10 +124,11 @@ export class JejMap extends HTMLElement {
   }
 
   #wheelHandler(e: WheelEvent) {
+    const deltaY = normalizeWheel(e);
     let { x, y } = this.fromViewSpace(e.clientX, e.clientY);
     this.panX(x);
     this.panY(y);
-    this.zoom(this.#zoom + e.deltaY*this.#zoom/100);
+    this.zoom(this.#zoom + deltaY*this.#zoom*this.#scrollFactor);
     const rect = this.getBoundingClientRect();
     ({ x, y } = this.fromViewSpace(rect.width - e.clientX, rect.height - e.clientY));
     this.panX(x);

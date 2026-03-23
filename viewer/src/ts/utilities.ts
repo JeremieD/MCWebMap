@@ -1,4 +1,5 @@
 export var isMobile = matchMedia("(hover: none)").matches;
+export var isMac = navigator.platform.startsWith("Mac");
 
 /**
  * Calls a function once the DOM has loaded.
@@ -12,4 +13,9 @@ export async function domReady(options: AddEventListenerOptions = { once: true, 
       resolve();
     }
   });
+}
+
+export function normalizeWheel(e: WheelEvent): number {
+  if (isMac) return e.deltaY;
+  return e.deltaY > 0 ? -1 : 1;
 }
