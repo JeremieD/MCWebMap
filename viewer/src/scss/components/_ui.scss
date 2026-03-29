@@ -78,15 +78,10 @@ hr {
   &.vertical {
     grid-auto-flow: row;
     button {
-      margin-bottom: -6px;
-      &:active {
-        margin-top: 6px;
-      }
+      margin-bottom: -9px;
+      &:active { margin-top: 6px; }
     }
-    button+button {
-      margin-left: 0;
-      // margin-top: -3px;
-    }
+    button+button { margin-left: 0; }
   }
 
   button {
@@ -116,12 +111,12 @@ hr {
     }
     &.square {
       width: 3rem;
-      height: 3rem;
+      height: calc(3rem + 6px);
       font-size: 2rem;
       padding: 0 .5rem;
-      padding-bottom: 3px;
+      padding-bottom: 6px;
       &:active {
-        height: calc(3rem - 6px);
+        height: 3rem;
         padding-bottom: 0;
       }
     }
