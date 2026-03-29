@@ -23,7 +23,7 @@ jej-map {
   .pins {
     user-select: none;
     pointer-events: none;
-    * { pointer-events: auto; }
+    // * { pointer-events: auto; }
   }
   .hud {
     pointer-events: none;
