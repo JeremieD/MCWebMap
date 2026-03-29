@@ -1,0 +1,14 @@
+jej-icon {
+  display: inline-block;
+  line-height: 0;
+  vertical-align: -0.1666em;
+  height: 1.125em;
+
+  svg {
+    width: auto;
+    height: 100%;
+    overflow: visible;
+    transition: .2s ease color;
+    will-change: translate;
+  }
+}
