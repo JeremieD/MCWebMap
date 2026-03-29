@@ -1,0 +1,11 @@
+:root {
+  --color-primary: #137342;
+
+  --color-overworld: #3C8527;
+  --color-nether: #853227;
+  --color-end: #852784;
+}
+
+.overworld { --color-accent: var(--color-overworld); }
+.nether    { --color-accent: var(--color-nether); }
+.end       { --color-accent: var(--color-end); }

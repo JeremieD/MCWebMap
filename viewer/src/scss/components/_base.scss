@@ -1,6 +1,16 @@
 :root {
   font-family: MC7, monospace;
+  letter-spacing: .05em;
   touch-action: none;
+  font-size: 14px;
+  --color-accent: var(--color-overworld);
 }
 
 body { overflow: hidden; }
+
+h1 {
+  font-family: MC10, monospace;
+  font-size: 3rem;
+  line-height: .8;
+  &+* { margin-top: .5em;  }
+}

@@ -24,7 +24,32 @@
         <canvas class="layer canvas"></canvas>
         <div class="layer pins"></div>
         <div class="layer hud">
+          <div id="main-hud" class="hud-card collapsed">
+            <button id="main-hud-toggle"><jej-icon icon="chevron-left"></jej-icon></button>
+            <h1>Le monde</h1>
+            <p id="subtitle">au 31 mars 2026</p>
+            <hr>
+            <div id="main-hud-dimension" class="button-group" aria-label="Dimension">
+              <button value="overworld" class="overworld selected">Overworld</button>
+              <button value="nether" class="nether">Nether</button>
+              <button value="end" class="end">End</button>
+            </div>
+            <div class="toggle-group">
+              <label for="main-hud-show-grid">Afficher la grille</label>
+              <div id="main-hud-show-grid" class="toggle-gizmo">
+                <div class="toggle-groove">
+                  <jej-icon icon="on"></jej-icon>
+                  <jej-icon icon="off"></jej-icon>
+                </div>
+                <button class="toggle-knob"></button>
+              </div>
+            </div>
+          </div>
           <output id="coords"></output>
+          <div id="zoom-controls" class="button-group vertical">
+            <button id="zoom-in" class="square">+</button>
+            <button id="zoom-out" class="square">–</button>
+          </div>
         </div>
       </jej-map>
     </section>

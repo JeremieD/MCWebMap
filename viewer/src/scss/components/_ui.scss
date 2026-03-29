@@ -1,0 +1,229 @@
+@mixin highlight {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  box-shadow: -3px -3px 0 0 #FFF3 inset,
+               3px  3px 0 0 #EEE3 inset;
+  mix-blend-mode: hard-light;
+  transition: .1s ease box-shadow;
+  pointer-events: none;
+}
+
+:focus-visible {
+  outline: 3px solid white;
+  z-index: 500;
+}
+
+label { user-select: none; }
+
+hr {
+  height: 6px;
+  width: calc(100% + 4rem);
+  border-top: 3px solid #333;
+  border-bottom: 3px solid #686868;
+  mix-blend-mode: hard-light;
+  margin: 1.5rem -2rem;
+}
+
+.hud-card {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  padding: 2rem;
+  color: white;
+  border: 3px solid #282828;
+  background-color: #444E;
+  backdrop-filter: blur(3px);
+  transition: .1s ease width,
+              .1s ease height;
+
+  &::after { @include highlight; }
+
+  &.collapsed {
+    width: 3rem;
+    height: 3rem;
+    padding: 1rem;
+    overflow: hidden;
+    &>*:not(#main-hud-toggle) {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #main-hud-toggle {
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100%;
+      jej-icon { rotate: 180deg; }
+    }
+  }
+}
+
+#main-hud-toggle {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  text-align: center;
+}
+
+.button-group {
+  display: grid;
+  grid-auto-rows: 1fr;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  text-align: center;
+
+  &.vertical {
+    grid-auto-flow: row;
+    button {
+      margin-bottom: -6px;
+      &:active {
+        margin-top: 6px;
+      }
+    }
+    button+button {
+      margin-left: 0;
+      // margin-top: -3px;
+    }
+  }
+
+  button {
+    position: relative;
+    padding: 1rem;
+    padding-bottom: calc(1rem + 6px);
+    line-height: 1;
+    color: #282828;
+    border: 3px solid #282828;
+    background-color: #CCC;
+    user-select: none;
+    &::after { @include highlight; }
+    &:not(.selected)::after {
+      box-shadow:  0   -6px 0 0 #444 inset,
+                   3px  3px 0 0 #FFF8 inset,
+                  -3px -9px 0 0 #EEE8 inset;
+    }
+    &:hover { background-color: #EEE; }
+    &:active {
+      background-color: #AAA;
+      margin-top: 6px;
+      padding-bottom: 1rem;
+      &:not(.selected)::after {
+        box-shadow: 3px  3px 0 0 #FFF8 inset,
+                   -3px -3px 0 0 #EEE8 inset;
+      }
+    }
+    &.square {
+      width: 3rem;
+      height: 3rem;
+      font-size: 2rem;
+      padding: 0 .5rem;
+      padding-bottom: 3px;
+      &:active {
+        height: calc(3rem - 6px);
+        padding-bottom: 0;
+      }
+    }
+  }
+  button+button { margin-left: -3px; }
+
+  button.selected {
+    margin-top: 6px;
+    padding-bottom: 1rem;
+    background-color: var(--color-accent);
+    color: white;
+    &::before {
+      content: "";
+      position: absolute;
+      width: 3rem;
+      height: 3px;
+      background-color: white;
+      left: 50%;
+      bottom: 0;
+      translate: -50%;
+    }
+  }
+}
+
+.toggle-group {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+}
+
+.toggle-gizmo {
+  position: relative;
+
+  .toggle-groove {
+    position: relative;
+    width: calc(6rem - 3px);
+    height: 2.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    text-align: center;
+    font-size: .875rem;
+    color: #282828;
+    border: 3px solid #282828;
+    background-color: #777;
+    margin-top: 6px;
+    box-shadow:  3px  3px 0 0 #FFF3 inset,
+                -3px -3px 0 0 #EEE3 inset;
+
+    jej-icon { translate: 0 calc(1rem - 50%); }
+  }
+  &.selected {
+    .toggle-groove {
+      background-color: var(--color-accent);
+      color: white;
+    }
+    .toggle-knob { translate: calc(100% - 3px); }
+  }
+
+  .toggle-knob {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 3rem;
+    height: calc(2.5rem + 6px);
+    color: #282828;
+    border: 3px solid #282828;
+    background-color: #CCC;
+    box-shadow: 0   -6px 0 0 #444 inset,
+                3px  3px 0 0 #FFF8 inset,
+               -3px -9px 0 0 #EEE8 inset;
+    transition: .1s ease translate;
+
+    &:hover { background-color: #EEE; }
+    &:active {
+      background-color: #AAA;
+      height: 2.5rem;
+      box-shadow: 3px  3px 0 0 #FFF8 inset,
+                 -3px -3px 0 0 #EEE8 inset;
+    }
+  }
+}
+
+#coords {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  padding: .5rem;
+  line-height: 1;
+  font-feature-settings: "kern" off;
+  color: #282828;
+  border: 3px solid #282828;
+  background-color: #CCCC;
+  backdrop-filter: blur(3px);
+  box-shadow: 3px  3px 0 0 #FFF5 inset,
+             -3px -3px 0 0 #EEE5 inset;
+  user-select: all;
+}
+
+#zoom-controls {
+  position: absolute;
+  right: 1rem;
+  bottom: calc(1rem + 6px);
+}

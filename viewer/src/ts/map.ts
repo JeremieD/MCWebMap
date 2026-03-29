@@ -19,8 +19,9 @@ export class JejMap extends HTMLElement {
   #tiles: { [regionKey: string]: ImageBitmap } = {};
 
   // Layers
-  #hud:    HTMLDivElement;
-  #pins:   HTMLDivElement;
+  #hud:  HTMLElement;
+  #pins: HTMLElement;
+  #canvasElement: HTMLCanvasElement;
   #canvas: CanvasRenderingContext2D;
 
   // HUD Elements
@@ -35,23 +36,22 @@ export class JejMap extends HTMLElement {
 
   constructor() {
     super();
+    this.addEventListener("pointerdown", e => this.#downHandler(e),  { passive: true });
+    addEventListener("pointermove",      e => this.#moveHandler(e),  { passive: true });
+    addEventListener("pointerup",        e => this.#upHandler(e),    { passive: true });
+    // addEventListener("pointercancel",    e => this.#upHandler(e),    { passive: true });
+    // addEventListener("pointerout",       e => this.#upHandler(e),    { passive: true });
+    // addEventListener("pointerleave",     e => this.#upHandler(e),    { passive: true });
+    this.addEventListener("wheel",       e => this.#wheelHandler(e), { passive: true });
 
-    this.addEventListener("pointerdown",   this.#downHandler,  { passive: true });
-    this.addEventListener("pointermove",   this.#moveHandler,  { passive: true });
-    this.addEventListener("pointerup",     this.#upHandler,    { passive: true });
-    this.addEventListener("pointercancel", this.#upHandler,    { passive: true });
-    this.addEventListener("pointerout",    this.#upHandler,    { passive: true });
-    this.addEventListener("pointerleave",  this.#upHandler,    { passive: true });
-    this.addEventListener("wheel",         this.#wheelHandler, { passive: true });
-
-    const canvasElement = this.querySelector<HTMLCanvasElement>(".canvas")!;
-    canvasElement.width = innerWidth;
-    canvasElement.height = innerHeight;
-
-    this.#hud    = this.querySelector(".hud")!;
-    this.#pins   = this.querySelector(".pins")!;
-    this.#canvas = canvasElement.getContext("2d")!;
+    this.#canvasElement = this.querySelector<HTMLCanvasElement>(".canvas")!;
+    this.#canvasElement.width  = innerWidth;
+    this.#canvasElement.height = innerHeight;
+    this.#canvas = this.#canvasElement.getContext("2d")!;
     this.#canvas.imageSmoothingEnabled = false;
+
+    this.#pins = this.querySelector(".pins")!;
+    this.#hud  = this.querySelector(".hud")!;
 
     this.#coords = document.getElementById("coords")! as HTMLOutputElement;
   }
@@ -80,7 +80,7 @@ export class JejMap extends HTMLElement {
 
       this.panX(-bounds.west*REGION_SIZE);
       this.panY(-bounds.north*REGION_SIZE);
-      this.zoom(.75);
+      this.zoom = .75;
     });
 
     // Start drawing
@@ -88,6 +88,7 @@ export class JejMap extends HTMLElement {
   }
 
   #downHandler(e: PointerEvent) {
+    if (e.target !== this.#canvasElement) return;
     this.#evCache.push(e);
     const clientPos = this.fromViewSpace(e.clientX, e.clientY);
     this.#pointerOriginX = clientPos.x;
@@ -97,14 +98,14 @@ export class JejMap extends HTMLElement {
 
   #moveHandler(e: PointerEvent) {
     const { x, y } = this.fromViewSpace(e.clientX, e.clientY);
-    this.#coords.textContent = `${Math.floor(x - this.origin[0])}, ${Math.floor(y - this.origin[1])}`;
+    this.#coords.textContent = `${Math.floor(x - this.origin[0])} ${Math.floor(y - this.origin[1])}`;
 
     const i = this.#evCache.findIndex(e2 => e2.pointerId === e.pointerId);
     this.#evCache[i] = e;
     if (this.#evCache.length === 2) { // Pinch zoom
       const diff = Math.abs(this.#evCache[0].clientX - this.#evCache[1].clientX);
       if (this.#prevDiff > 0) {
-        this.zoom(this.#zoom * (diff/this.#prevDiff));
+        this.zoom = this.#zoom * (diff/this.#prevDiff);
       }
       this.#prevDiff = diff;
 
@@ -117,6 +118,7 @@ export class JejMap extends HTMLElement {
   }
 
   #upHandler(e: PointerEvent) {
+    console.log(e.type, e.eventPhase, e.currentTarget, e.target);
     const i = this.#evCache.findIndex(e2 => e2.pointerId === e.pointerId);
     this.#evCache.splice(i, 1);
     if (this.#evCache.length < 2) this.#prevDiff = -1;
@@ -124,11 +126,12 @@ export class JejMap extends HTMLElement {
   }
 
   #wheelHandler(e: WheelEvent) {
+    if (e.target !== this.#canvasElement) return;
     const deltaY = normalizeWheel(e);
     let { x, y } = this.fromViewSpace(e.clientX, e.clientY);
     this.panX(x);
     this.panY(y);
-    this.zoom(this.#zoom + deltaY*this.#zoom*this.#scrollFactor);
+    this.zoom = this.#zoom + deltaY*this.#zoom*this.#scrollFactor;
     const rect = this.getBoundingClientRect();
     ({ x, y } = this.fromViewSpace(rect.width - e.clientX, rect.height - e.clientY));
     this.panX(x);
@@ -204,8 +207,8 @@ export class JejMap extends HTMLElement {
     if (this.#panY > this.height) this.#panY = this.height;
   }
 
-  zoom(z: number): number | void {
-    if (z === undefined) return this.#zoom;
+  get zoom() { return this.#zoom; }
+  set zoom(z: number) {
     this.#zoom = z;
     if (this.#zoom < this.minZoom) this.#zoom = this.minZoom;
     if (this.#zoom > this.maxZoom) this.#zoom = this.maxZoom;
@@ -244,7 +247,7 @@ export class JejMap extends HTMLElement {
     const heightFactor = -Math.abs(2*this.#offsetY - 1) + 1;
     const zoomX = rect.width  * widthFactor  / spanX;
     const zoomY = rect.height * heightFactor / spanY;
-    this.zoom(Math.min(zoomX, zoomY));
+    this.zoom = Math.min(zoomX, zoomY);
   }
 }
 

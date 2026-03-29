@@ -24,11 +24,6 @@
 /* Clip raster media. */
 img, video, canvas { overflow: clip; }
 
-/* Accessible by default. */
-:focus {
-  outline: auto;
-}
-
 /* Set display: none; elements. These should never appear. */
 head, base, link, meta, title, script, source, style, option, template, dialog:not([open]) {
   display: none;
