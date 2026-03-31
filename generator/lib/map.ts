@@ -109,18 +109,21 @@ function getMapColor(region: Anvil, chunk: Chunk, block: BlockInstance | undefin
              name === "fern" || name === "large_fern" || name === "sugar_cane") {
     // Plant tint
     const tint = biomeTintDithered(region, block.coords, grassTint);
-    color = tintColor(color, tint);
+    let tintedColor = tintColor(color, tint);
+    if (tintedColor) color = tintedColor;
 
   } else if (name === "oak_leaves" || name === "jungle_leaves" || name === "acacia_leaves" ||
              name === "dark_oak_leaves" || name === "mangrove_leaves" || name === "vines") {
     // Foliage color
     const tint = biomeTintDithered(region, block.coords, foliageTint);
-    color = tintColor(color, tint);
+    let tintedColor = tintColor(color, tint);
+    if (tintedColor) color = tintedColor;
 
   } else if (isWater(block)) {
     // Water color
     const tint = biomeTintDithered(region, block.coords, waterTint);
-    color = tintColor(color, tint);
+    let tintedColor = tintColor(color, tint);
+    if (tintedColor) color = tintedColor;
   }
 
   return [...color];
@@ -130,8 +133,10 @@ function shadeColor(color: number[], shade: number) {
   for (let i = 0; i < 3; i++) color[i] = Math.floor(color[i] * shade);
 }
 
-function tintColor(color: number[], tint: number[] | undefined, amount = .5) {
-  if (!tint) return color;
+function tintColor(color: number[] | undefined, tint: number[] | undefined, amount = .5) {
+  if (!color) return;
+  if (!tint || amount === 0) return color;
+  if (amount === 1) return tint;
   return [
     Math.floor(color[0]*(1-amount) + tint[0]*amount),
     Math.floor(color[1]*(1-amount) + tint[1]*amount),
@@ -158,7 +163,7 @@ function biomeTintDithered(region: Anvil, coords: Coords3d, colorFunction: (biom
   const biomes = Object.entries(biomeCounts).map(([b, c]) => { return { b: b, c: c } }).sort((a: any, b: any) => b.c - a.c);
 
   if (biomes.length <= 1) return colorFunction(biomes[0].b);
-  return tintColor(colorFunction(biomes[0].b)!, colorFunction(biomes[1].b));
+  return tintColor(colorFunction(biomes[0].b), colorFunction(biomes[1].b));
 }
 
 // From mc.wiki/Block_colors#Grass_colors
@@ -391,45 +396,6 @@ const foliageTint = (biome: string) => {
 const waterTint = (biome: string) => {
   biome = biome.split(":")[1];
   switch (biome) {
-    case "plains":
-    case "sunflower_plains":
-    case "meadow":
-    case "grove":
-    case "snowy_slopes":
-    case "frozen_peaks":
-    case "jagged_peaks":
-    case "stony_peaks":
-    case "dripstone_caves":
-    case "lush_caves":
-    case "deep_dark":
-    case "river":
-    case "windswept_hills":
-    case "forest":
-    case "flower_forest":
-    case "birch_forest":
-    case "old_growth_birch_forest":
-    case "dark_forest":
-    case "mushroom_fields":
-    case "beach":
-    case "desert":
-    case "jungle":
-    case "bamboo_jungle":
-    case "sparse_jungle":
-    case "stony_shore":
-    case "windswept_forest":
-    case "windswept_gravelly_hills":
-    case "savanna":
-    case "windswept_savanna":
-    case "savanna_plateau":
-    case "badlands":
-    case "eroded_badlands":
-    case "wooded_badlands":
-    case "taiga":
-    case "old_growth_spruce_taiga":
-    case "old_growth_pine_taiga":
-    case "ocean":
-    case "deep_ocean":
-      return [8, 100, 248, 255]; // #0864F8
     case "swamp":
       return [76, 101, 89, 255]; // #4C6559
     case "mangrove_swamp":
@@ -445,26 +411,9 @@ const waterTint = (biome: string) => {
       return [93, 183, 239, 255]; // #5DB7EF
     case "pale_garden":
       return [118, 136, 157, 255]; // #76889D
-    case "warm_ocean":
-    case "deep_warm_ocean":
-      return [2, 176, 229, 255]; // #02B0E5
-    case "lukewarm_ocean":
-    case "deep_lukewarm_ocean":
-      return [13, 150, 219, 255]; // #0D96DB
-    case "cold_ocean":
-    case "deep_cold_ocean":
-      return [32, 128, 201, 255]; // #2080C9
-    case "frozen_ocean":
-    case "deep_frozen_ocean":
-    case "frozen_river":
-    case "snowy_plains":
-    case "ice_spikes":
-    case "snowy_beach":
-    case "snowy_taiga":
-      return [37, 112, 181, 255]; // #2570B5
+    default:
+      return [8, 100, 248, 255]; // #0864F8
   }
-  console.error("No tint defined for " + biome);
-  return;
 };
 
 // Extracted from MapColor.class v26.1
