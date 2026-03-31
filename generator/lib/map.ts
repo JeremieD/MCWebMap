@@ -467,70 +467,70 @@ const waterTint = (biome: string) => {
   return;
 };
 
-// Extracted from MapColor.class v1.21.8
+// Extracted from MapColor.class v26.1
 const colors = [
-  null,                 // 0 clear
-  [127, 178, 56, 255],  // 1 paleGreen
-  [247, 233, 163, 255], // 2 paleYellow
-  [199, 199, 199, 255], // 3 whiteGray
-  [255, 0, 0, 255],     // 4 brightRed
-  [160, 160, 255, 255], // 5 palePurple
-  [167, 167, 167, 255], // 6 ironGray
-  [0, 124, 0, 255],     // 7 darkGreen
-  [255, 255, 255, 255], // 8 white
-  [164, 168, 184, 255], // 9 lightBlueGray
-  [151, 109, 77, 255],  // 10 dirtBrown
-  [112, 112, 112, 255], // 11 stoneGray
-  [64, 64, 255, 255],   // 12 waterBlue
-  [143, 119, 72, 255],  // 13 oakTan
-  [255, 252, 245, 255], // 14 offWhite
-  [216, 127, 51, 255],  // 15 orange
-  [178, 76, 216, 255],  // 16 magenta
-  [102, 153, 216, 255], // 17 lightBlue
-  [229, 229, 51, 255],  // 18 yellow
-  [127, 204, 25, 255],  // 19 lime
-  [242, 127, 165, 255], // 20 pink
-  [76, 76, 76, 255],    // 21 gray
-  [153, 153, 153, 255], // 22 lightGray
-  [76, 127, 153, 255],  // 23 cyan
-  [127, 63, 178, 255],  // 24 purple
-  [51, 76, 178, 255],   // 25 blue
-  [102, 76, 51, 255],   // 26 brown
-  [102, 127, 51, 255],  // 27 green
-  [153, 51, 51, 255],   // 28 red
-  [25, 25, 25, 255],    // 29 black
-  [250, 238, 77, 255],  // 30 gold
-  [92, 219, 213, 255],  // 31 diamondBlue
-  [74, 128, 255, 255],  // 32 lapisBlue
-  [0, 217, 58, 255],    // 33 emeraldGreen
-  [129, 86, 49, 255],   // 34 spruceBrown
-  [112, 2, 0, 255],     // 35 darkRed
-  [209, 177, 161, 255], // 36 terracottaWhite
-  [159, 82, 36, 255],   // 37 terracottaOrange
-  [149, 87, 108, 255],  // 38 terracottaMagenta
-  [112, 108, 138, 255], // 39 terracottaLightBlue
-  [186, 133, 36, 255],  // 40 terracottaYellow
-  [103, 117, 53, 255],  // 41 terracottaLime
-  [160, 77, 78, 255],   // 42 terracottaPink
-  [57, 41, 35, 255],    // 43 terracottaGray
-  [135, 107, 98, 255],  // 44 terracottaLightGray
-  [87, 92, 92, 255],    // 45 terracottaCyan
-  [122, 73, 88, 255],   // 46 terracottaPurple
-  [76, 62, 92, 255],    // 47 terracottaBlue
-  [76, 50, 35, 255],    // 48 terracottaBrown
-  [76, 82, 42, 255],    // 49 terracottaGreen
-  [142, 60, 46, 255],   // 50 terracottaRed
-  [37, 22, 16, 255],    // 51 terracottaBlack
-  [189, 48, 49, 255],   // 52 dullRed
-  [148, 63, 97, 255],   // 53 dullPink
-  [92, 25, 29, 255],    // 54 darkCrimson
-  [22, 126, 134, 255],  // 55 teal
-  [58, 142, 140, 255],  // 56 darkAqua
-  [86, 44, 62, 255],    // 57 darkDullPink
-  [20, 180, 133, 255],  // 58 brightTeal
-  [100, 100, 100, 255], // 59 deepslateGray
-  [216, 175, 147, 255], // 60 rawIronPink
-  [127, 167, 150, 255]  // 61 lichenGreen
+  null,                 // 0 NONE
+  [127, 178, 56, 255],  // 1 GRASS
+  [247, 233, 163, 255], // 2 SAND
+  [199, 199, 199, 255], // 3 WOOL
+  [255, 0, 0, 255],     // 4 FIRE
+  [160, 160, 255, 255], // 5 ICE
+  [167, 167, 167, 255], // 6 METAL
+  [0, 124, 0, 255],     // 7 PLANT
+  [255, 255, 255, 255], // 8 SNOW
+  [164, 168, 184, 255], // 9 CLAY
+  [151, 109, 77, 255],  // 10 DIRT
+  [112, 112, 112, 255], // 11 STONE
+  [64, 64, 255, 255],   // 12 WATER
+  [143, 119, 72, 255],  // 13 WOOD
+  [255, 252, 245, 255], // 14 QUARTZ
+  [216, 127, 51, 255],  // 15 COLOR_ORANGE
+  [178, 76, 216, 255],  // 16 COLOR_MAGENTA
+  [102, 153, 216, 255], // 17 COLOR_LIGHT_BLUE
+  [229, 229, 51, 255],  // 18 COLOR_YELLOW
+  [127, 204, 25, 255],  // 19 COLOR_LIGHT_GREEN
+  [242, 127, 165, 255], // 20 COLOR_PINK
+  [76, 76, 76, 255],    // 21 COLOR_GRAY
+  [153, 153, 153, 255], // 22 COLOR_LIGHT_GRAY
+  [76, 127, 153, 255],  // 23 COLOR_CYAN
+  [127, 63, 178, 255],  // 24 COLOR_PURPLE
+  [51, 76, 178, 255],   // 25 COLOR_BLUE
+  [102, 76, 51, 255],   // 26 COLOR_BROWN
+  [102, 127, 51, 255],  // 27 COLOR_GREEN
+  [153, 51, 51, 255],   // 28 COLOR_RED
+  [25, 25, 25, 255],    // 29 COLOR_BLACK
+  [250, 238, 77, 255],  // 30 GOLD
+  [92, 219, 213, 255],  // 31 DIAMOND
+  [74, 128, 255, 255],  // 32 LAPIS
+  [0, 217, 58, 255],    // 33 EMERALD
+  [129, 86, 49, 255],   // 34 PODZOL
+  [112, 2, 0, 255],     // 35 NETHER
+  [209, 177, 161, 255], // 36 TERRACOTTA_WHITE
+  [159, 82, 36, 255],   // 37 TERRACOTTA_ORANGE
+  [149, 87, 108, 255],  // 38 TERRACOTTA_MAGENTA
+  [112, 108, 138, 255], // 39 TERRACOTTA_LIGHT_BLUE
+  [186, 133, 36, 255],  // 40 TERRACOTTA_YELLOW
+  [103, 117, 53, 255],  // 41 TERRACOTTA_LIGHT_GREEN
+  [160, 77, 78, 255],   // 42 TERRACOTTA_PINK
+  [57, 41, 35, 255],    // 43 TERRACOTTA_GRAY
+  [135, 107, 98, 255],  // 44 TERRACOTTA_LIGHT_GRAY
+  [87, 92, 92, 255],    // 45 TERRACOTTA_CYAN
+  [122, 73, 88, 255],   // 46 TERRACOTTA_PURPLE
+  [76, 62, 92, 255],    // 47 TERRACOTTA_BLUE
+  [76, 50, 35, 255],    // 48 TERRACOTTA_BROWN
+  [76, 82, 42, 255],    // 49 TERRACOTTA_GREEN
+  [142, 60, 46, 255],   // 50 TERRACOTTA_RED
+  [37, 22, 16, 255],    // 51 TERRACOTTA_BLACK
+  [189, 48, 49, 255],   // 52 CRIMSON_NYLIUM
+  [148, 63, 97, 255],   // 53 CRIMSON_STEM
+  [92, 25, 29, 255],    // 54 CRIMSON_HYPHAE
+  [22, 126, 134, 255],  // 55 WARPED_NYLIUM
+  [58, 142, 140, 255],  // 56 WARPED_STEM
+  [86, 44, 62, 255],    // 57 WARPED_HYPHAE
+  [20, 180, 133, 255],  // 58 WARPED_WART_BLOCK
+  [100, 100, 100, 255], // 59 DEEPSLATE
+  [216, 175, 147, 255], // 60 RAW_IRON
+  [127, 167, 150, 255]  // 61 GLOW_LICHEN
 ];
 const brightness = {
   lowest: 135 / 255,
@@ -538,7 +538,7 @@ const brightness = {
   normal: 220 / 255,
   high: 255 / 255
 };
-// Extracted from Blocks.class v1.21.11
+// Extracted from Blocks.class v26.1
 const blocks = {
   air: 0,
   stone: 11,
@@ -698,6 +698,7 @@ const blocks = {
   black_wool: 29,
   moving_piston: 11,
   dandelion: 7,
+  golden_dandelion: 7,
   torchflower: 7,
   poppy: 7,
   blue_orchid: 7,
@@ -963,6 +964,7 @@ const blocks = {
   potted_mangrove_propagule: 0,
   potted_fern: 0,
   potted_dandelion: 0,
+  potted_golden_dandelion: 0,
   potted_poppy: 0,
   potted_blue_orchid: 0,
   potted_allium: 0,
@@ -1713,7 +1715,7 @@ blocks.azure_bluet = 22;
 blocks.blue_orchid = 17;
 blocks.cornflower = 25;
 blocks.dandelion = 18;
-// blocks.golden_dandelion = 30;
+blocks.golden_dandelion = 30;
 blocks.lily_of_the_valley = 14;
 blocks.oxeye_daisy = 22;
 blocks.poppy = 28;
