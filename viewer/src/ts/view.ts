@@ -9,6 +9,7 @@ const V: {
   mainHUD: HTMLElement,
   hudToggle: HTMLElement,
   dimensionToggle: HTMLElement,
+  poisToggle: HTMLElement,
   gridToggle: HTMLElement,
   zoomIn: HTMLButtonElement,
   zoomOut: HTMLButtonElement
@@ -34,8 +35,16 @@ export async function initView() {
       for (const b of V.dimensionToggle.children) {
         b.classList.toggle("selected", b.getAttribute("value") === dimension);
       }
+      V.map.setAttribute("src", "data/" + dimension);
     }, { passive: true });
   }
+
+  // POIs toggler
+  V.poisToggle = document.getElementById("main-hud-show-pois")!;
+  V.poisToggle.addEventListener("click", () => {
+    V.poisToggle.classList.toggle("selected");
+    V.map.getElementsByClassName("pins")[0].classList.toggle("invisible", !V.poisToggle.classList.contains("selected"));
+  }, { passive: true });
 
   // Grid toggler
   V.gridToggle = document.getElementById("main-hud-show-grid")!;

@@ -57,15 +57,30 @@ export class JejMap extends HTMLElement {
   }
 
   connectedCallback() {
+    this.#init();
+
+    // Start drawing
+    requestAnimationFrame(_ => { this.#draw() } );
+  }
+
+  attributeChangedCallback() {
+    this.#init();
+  }
+
+  #init() {
+    this.#tileRequests = {};
+    this.#tiles = {};
+    this.#pins.innerHTML = "";
+
     this.#src = this.getAttribute("src") ?? "";
     this.#offsetX = parseFloat(this.getAttribute("offsetx") ?? ".5");
     this.#offsetY = parseFloat(this.getAttribute("offsety") ?? ".5");
 
-    fetch(`${this.#src}/world.json`).then(async response => {
+    fetch(`${this.#src}/meta.json`).then(async response => {
       const data = await response.json();
 
       // Coordinate space
-      const bounds = data.overworld.bounds;
+      const bounds = data.bounds;
       this.origin = [-bounds.west*REGION_SIZE, -bounds.north*REGION_SIZE];
       const colCount = Math.abs(bounds.east  - bounds.west)  + 1;
       const rowCount = Math.abs(bounds.south - bounds.north) + 1;
@@ -73,7 +88,7 @@ export class JejMap extends HTMLElement {
       this.height = rowCount * REGION_SIZE;
 
       // POI data
-      for (const poi of data.overworld.pois) {
+      for (const poi of data.pois ?? []) {
         const pin = new JejPin(poi);
         this.#pins.append(pin);
       }
@@ -82,9 +97,6 @@ export class JejMap extends HTMLElement {
       this.panY(-bounds.north*REGION_SIZE);
       this.zoom = .75;
     });
-
-    // Start drawing
-    requestAnimationFrame(_ => { this.#draw() } );
   }
 
   #downHandler(e: PointerEvent) {
@@ -118,7 +130,6 @@ export class JejMap extends HTMLElement {
   }
 
   #upHandler(e: PointerEvent) {
-    console.log(e.type, e.eventPhase, e.currentTarget, e.target);
     const i = this.#evCache.findIndex(e2 => e2.pointerId === e.pointerId);
     this.#evCache.splice(i, 1);
     if (this.#evCache.length < 2) this.#prevDiff = -1;
@@ -156,17 +167,17 @@ export class JejMap extends HTMLElement {
     const topLeft  = this.fromViewSpace(0, 0);
     const botRight = this.fromViewSpace(rect.right, rect.bottom);
     const effectiveBounds = {
-      north: Math.floor((topLeft.y  - this.origin[1]) / 512),
-      west:  Math.floor((topLeft.x  - this.origin[0]) / 512),
-      east:  Math.floor((botRight.x - this.origin[0]) / 512),
-      south: Math.floor((botRight.y - this.origin[1]) / 512)
+      north: Math.floor((topLeft.y  - this.origin[1]) / REGION_SIZE),
+      west:  Math.floor((topLeft.x  - this.origin[0]) / REGION_SIZE),
+      east:  Math.floor((botRight.x - this.origin[0]) / REGION_SIZE),
+      south: Math.floor((botRight.y - this.origin[1]) / REGION_SIZE)
     };
 
     for (let x = effectiveBounds.west;  x <= effectiveBounds.east;  x++)
     for (let z = effectiveBounds.north; z <= effectiveBounds.south; z++) {
       const regionKey = `${x}.${z}`;
       if (!this.#tileRequests[regionKey]) {
-        this.#tileRequests[regionKey] = fetch(`data/overworld/${regionKey}.webp`)
+        this.#tileRequests[regionKey] = fetch(`${this.#src}/${regionKey}.webp`)
         .then(async (res: Response) => {
           if (!res.ok) return;
           this.#tiles[regionKey] = await createImageBitmap(await res.blob());
@@ -174,9 +185,9 @@ export class JejMap extends HTMLElement {
       }
       if (!this.#tiles[regionKey]) continue;
 
-      const regionX = this.#zoom * (this.origin[0] + x*512 - this.#panX + this.width/2) + offsetX;
-      const regionY = this.#zoom * (this.origin[1] + z*512 - this.#panY + this.height/2) + offsetY;
-      const regionWidth = this.#zoom * 512;
+      const regionX = this.#zoom * (this.origin[0] + x*REGION_SIZE - this.#panX + this.width/2) + offsetX;
+      const regionY = this.#zoom * (this.origin[1] + z*REGION_SIZE - this.#panY + this.height/2) + offsetY;
+      const regionWidth = this.#zoom * REGION_SIZE;
       const regionHeight = regionWidth;
 
       this.#canvas.drawImage(this.#tiles[regionKey]!, regionX, regionY, regionWidth, regionHeight);
@@ -249,6 +260,8 @@ export class JejMap extends HTMLElement {
     const zoomY = rect.height * heightFactor / spanY;
     this.zoom = Math.min(zoomX, zoomY);
   }
+
+  static get observedAttributes() { return [ "src" ]; }
 }
 
 customElements.define("jej-map", JejMap);

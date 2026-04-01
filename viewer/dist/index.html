@@ -20,7 +20,7 @@
 
   <main>
     <section>
-      <jej-map id="map" src="data">
+      <jej-map id="map" src="data/overworld">
         <canvas class="layer canvas"></canvas>
         <div class="layer pins"></div>
         <div class="layer hud">
@@ -35,6 +35,16 @@
               <button value="end" class="end">End</button>
             </div>
             <div class="toggle-group">
+              <label for="main-hud-show-pois">Afficher les points d’intérêt</label>
+              <div id="main-hud-show-pois" class="toggle-gizmo selected">
+                <div class="toggle-groove">
+                  <jej-icon icon="on"></jej-icon>
+                  <jej-icon icon="off"></jej-icon>
+                </div>
+                <button class="toggle-knob"></button>
+              </div>
+            </div>
+            <div class="toggle-group" style="display: none;">
               <label for="main-hud-show-grid">Afficher la grille</label>
               <div id="main-hud-show-grid" class="toggle-gizmo">
                 <div class="toggle-groove">
