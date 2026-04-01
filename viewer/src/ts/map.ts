@@ -31,7 +31,7 @@ export class JejMap extends HTMLElement {
   origin  = [0, 0];
   width   = 512; // blocks
   height  = 512; // blocks
-  minZoom = .125;
+  minZoom = .0625;
   maxZoom = 8;
 
   constructor() {
