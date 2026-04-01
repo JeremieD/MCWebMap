@@ -2,16 +2,19 @@ import type { BlockInstance, Chunk, Coords3d } from "mca-json";
 import { Anvil } from "mca-json";
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
-import { getBiome, getWaterDepth, getHighestBlock, getStatus, isWater } from "./chunk.ts";
-import { mod, REGION_SIZE, SECTION_SIZE } from "./util.ts";
+import { getBiome, getHighestBlock, getStatus, getWaterDepth, isWater } from "./chunk.ts";
+import type { Dimension } from "./util.ts";
+import { getDimensionSubPath, mod, REGION_SIZE, SECTION_SIZE } from "./util.ts";
 
 const IMG_CHANNELS = 4; // RGBA
 
-export function generateTile(worldPath: string, regionX: number, regionZ: number) {
-  const regionFile = readFileSync(`${worldPath}/region/r.${regionX}.${regionZ}.mca`);
+export function generateTile(worldPath: string, outputPath: string, dimension: Dimension, regionX: number, regionZ: number) {
+  const dimensionSubPath = getDimensionSubPath(dimension);
+  const regionFile = readFileSync(`${worldPath}/${dimensionSubPath}/r.${regionX}.${regionZ}.mca`);
   const region = Anvil.fromBuffer(regionFile.buffer);
   const chunks = region.getAllChunks();
   let effectiveHeightmap: number[][] = [];
+  const worldBottom = dimension === "overworld" ? -64 : 0;
 
   // Init map pixels
   const mapPixels = new Uint8ClampedArray(REGION_SIZE*REGION_SIZE * IMG_CHANNELS);
@@ -31,12 +34,19 @@ export function generateTile(worldPath: string, regionX: number, regionZ: number
       const regionZ = mod(worldZ, REGION_SIZE);
 
       if (status === "minecraft:full" || status === "minecraft:initialize_light") {
-        let surface = getHighestBlock(chunk, [worldX, worldZ]);
+        let surface: BlockInstance;
+        try {
+          surface = getHighestBlock(chunk, [worldX, worldZ], dimension);
+        } catch (e) {
+          // No highest block (column empty) TODO: special case using void id or something.
+          // console.log([worldX, worldZ], e.message);
+          continue;
+        }
         color = getMapColor(region, chunk, surface);
-        let y = surface.coords[1];
-        while (color === null && y > -64) {
+        let y = surface.coords[1]+1;
+        while (color === null && --y >= worldBottom) {
           try {
-            surface = chunk.getBlock([worldX, --y, worldZ]);
+            surface = chunk.getBlock([worldX, y, worldZ]);
           } catch (e) { continue; }
           color = getMapColor(region, chunk, surface);
         }
@@ -85,7 +95,7 @@ export function generateTile(worldPath: string, regionX: number, regionZ: number
       channels: IMG_CHANNELS
     }
   }).webp({ lossless: true })
-    .toFile(`output/${regionX}.${regionZ}.webp`);
+    .toFile(`${outputPath}/${regionX}.${regionZ}.webp`);
 }
 
 function getMapColor(region: Anvil, chunk: Chunk, block: BlockInstance | undefined): number[] | null {
@@ -418,16 +428,16 @@ const waterTint = (biome: string) => {
 
 // Extracted from MapColor.class v26.1
 const colors = [
-  null,                 // 0 NONE
-  [127, 178, 56, 255],  // 1 GRASS
-  [247, 233, 163, 255], // 2 SAND
-  [199, 199, 199, 255], // 3 WOOL
-  [255, 0, 0, 255],     // 4 FIRE
-  [160, 160, 255, 255], // 5 ICE
-  [167, 167, 167, 255], // 6 METAL
-  [0, 124, 0, 255],     // 7 PLANT
-  [255, 255, 255, 255], // 8 SNOW
-  [164, 168, 184, 255], // 9 CLAY
+  null,                 // 0  NONE
+  [127, 178, 56, 255],  // 1  GRASS
+  [247, 233, 163, 255], // 2  SAND
+  [199, 199, 199, 255], // 3  WOOL
+  [255, 0, 0, 255],     // 4  FIRE
+  [160, 160, 255, 255], // 5  ICE
+  [167, 167, 167, 255], // 6  METAL
+  [0, 124, 0, 255],     // 7  PLANT
+  [255, 255, 255, 255], // 8  SNOW
+  [164, 168, 184, 255], // 9  CLAY
   [151, 109, 77, 255],  // 10 DIRT
   [112, 112, 112, 255], // 11 STONE
   [64, 64, 255, 255],   // 12 WATER
@@ -483,9 +493,9 @@ const colors = [
 ];
 const brightness = {
   lowest: 135 / 255,
-  low: 180 / 255,
+  low:    180 / 255,
   normal: 220 / 255,
-  high: 255 / 255
+  high:   1
 };
 // Extracted from Blocks.class v26.1
 const blocks = {

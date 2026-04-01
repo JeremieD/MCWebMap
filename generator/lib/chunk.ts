@@ -1,6 +1,7 @@
 import type { BlockInstance, Coords2d, Coords3d } from "mca-json";
-import { Anvil, Chunk } from "mca-json";
-import { mod, REGION_SIZE, SECTION_SIZE } from "./util.ts";
+import { Anvil, Block, Chunk } from "mca-json";
+import type { Dimension } from "./util.ts";
+import { mod, SECTION_SIZE } from "./util.ts";
 
 let chunkCache = {};
 function getChunk(region: Anvil, blockCoords: Coords2d) {
@@ -20,7 +21,7 @@ function getChunk(region: Anvil, blockCoords: Coords2d) {
  * @param coords
  * @returns a BlockInstance
  */
-export function getHighestBlock(chunk: Chunk, coords: Coords2d): BlockInstance {
+export function getHighestBlock(chunk: Chunk, coords: Coords2d, dimension: Dimension = "overworld"): BlockInstance {
   const [xWorld, zWorld] = chunk.worldCoordinates() ?? [0, 0];
   const xChunk = coords[0] - xWorld;
   const zChunk = coords[1] - zWorld;
@@ -30,9 +31,9 @@ export function getHighestBlock(chunk: Chunk, coords: Coords2d): BlockInstance {
   const heightmap = worldSurfaceHeightmapTag(chunk);
   const index = (zChunk << 4) | xChunk;
   const packedLong = heightmap[Math.floor(index / 7)] ?? 0n;
-  const y = (Number((packedLong >> BigInt(index%7*9)) & 511n)) - 65;
-
-  return chunk.getBlock([coords[0], y, coords[1]]);
+  const yOffset = dimension === "overworld" ? -64 : 0;
+  const y = (Number((packedLong >> BigInt(index%7*9)) & 511n)) + yOffset;
+  return getBlock(chunk, [coords[0], y-1, coords[1]]);
 }
 
 let heightmapTagsCache = {};
@@ -63,6 +64,40 @@ function sectionTag(chunk: Chunk, sectionY: number) {
 
   sectionTagsCache[sectionKey] = sectionTag;
   return sectionTag;
+}
+
+function getBlock(chunk: Chunk, coords: Coords3d): BlockInstance {
+  const sectionY = Math.floor(coords[1] / 16);
+  const section = sectionTag(chunk, sectionY);
+
+  if (!section) throw new Error("Block not found in any sections");
+
+  const chunkCoords = chunk.chunkCoordinates() ?? [0, 0];
+  const xWorld = chunkCoords[0]*16
+  const zWorld = chunkCoords[1]*16;
+  const xChunk = coords[0] - xWorld;
+  const zChunk = coords[2] - zWorld;
+
+  if (xChunk < 0 || xChunk > 15) throw new Error("X coordinate out of bounds");
+  if (zChunk < 0 || zChunk > 15) throw new Error("Z coordinate out of bounds");
+
+  const blockStates = section.compound.block_states.compound;
+
+  const palette = blockStates.palette.list;
+  const paletteLength = palette.length;
+
+  if (paletteLength === 1) return Block.create(palette[0].compound.Name.string, coords);
+
+  const blockData = blockStates.data.longArray;
+
+  const bitsPerPaletteId = Math.max(Math.ceil(Math.log2(paletteLength)), 4);
+  const idsPerLong = Math.floor(64 / bitsPerPaletteId);
+
+  const index = ((((coords[1] % 16) + 16) % 16) << 8) | (zChunk << 4) | xChunk;
+  const packedLong = BigInt(blockData[Math.floor(index / idsPerLong)]) ?? 0n;
+  const paletteId = Number((packedLong >> BigInt(index%idsPerLong*bitsPerPaletteId)) & BigInt(2**bitsPerPaletteId-1));
+
+  return Block.create(palette[paletteId].compound.Name.string, coords, chunk.blockEntityData(coords));
 }
 
 export function getStatus(chunk: Chunk) {
