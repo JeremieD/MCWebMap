@@ -1,23 +1,77 @@
 import type { BlockInstance, Chunk, Coords3d } from "mca-json";
 import { Anvil } from "mca-json";
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import sharp from "sharp";
-import { getBiome, getHighestBlock, getStatus, getWaterDepth, isWater } from "./chunk.ts";
+import { clearCache, getBiome, getHighestBlock, getStatus, getWaterDepth, isWater } from "./chunk.ts";
 import type { Dimension } from "./util.ts";
 import { getDimensionSubPath, mod, REGION_SIZE, SECTION_SIZE } from "./util.ts";
 
 const IMG_CHANNELS = 4; // RGBA
+export const TILE_SIZE = 4; // Width of a tile, in regions
 
-export function generateTile(worldPath: string, outputPath: string, dimension: Dimension, regionX: number, regionZ: number) {
+export function generateTile(worldPath: string, outputPath: string, dimension: Dimension, tileX: number, tileZ: number) {
+  const regionMaps: Uint8ClampedArray<ArrayBuffer>[] = [];
+
+  const topLeftRegionX = tileX * TILE_SIZE;
+  const topLeftRegionZ = tileZ * TILE_SIZE;
+
+  for (let i = 0; i < TILE_SIZE; i++)
+  for (let j = 0; j < TILE_SIZE; j++) {
+    const map = mapRegion(worldPath, dimension, topLeftRegionX+i, topLeftRegionZ+j);
+    regionMaps.push(map);
+    clearCache();
+  }
+
+  // Image Output
+  mkdirSync(`${outputPath}/0`, { recursive: true });
+  sharp(stitchTile(regionMaps), {
+    raw: {
+      width: REGION_SIZE*TILE_SIZE,
+      height: REGION_SIZE*TILE_SIZE,
+      channels: IMG_CHANNELS
+    }
+  }).webp({ lossless: true, effort: 6 })
+    .toFile(`${outputPath}/0/${tileX}.${tileZ}.webp`);
+}
+
+function stitchTile(subTiles: Uint8ClampedArray<ArrayBuffer>[]): Uint8ClampedArray<ArrayBuffer>  {
+  const size = REGION_SIZE * TILE_SIZE;
+  const tex = new Uint8ClampedArray(size*size * IMG_CHANNELS);
+
+  for (let i = 0; i < subTiles.length; i++) {
+    const subTileX = Math.floor(i / TILE_SIZE) * REGION_SIZE;
+    const subTileZ = (i % TILE_SIZE) * REGION_SIZE * REGION_SIZE*TILE_SIZE;
+    const subTileOffset = subTileX + subTileZ;
+    for (let x = 0; x < REGION_SIZE; x++)
+    for (let z = 0; z < REGION_SIZE; z++) {
+      const originOffset = (z*REGION_SIZE + x) * IMG_CHANNELS;
+      const destinationOffset = (subTileOffset + z*REGION_SIZE*TILE_SIZE + x) * IMG_CHANNELS;
+      tex[destinationOffset]   = subTiles[i][originOffset];
+      tex[destinationOffset+1] = subTiles[i][originOffset+1];
+      tex[destinationOffset+2] = subTiles[i][originOffset+2];
+      tex[destinationOffset+3] = subTiles[i][originOffset+3];
+    }
+  }
+
+  return tex;
+}
+
+function mapRegion(worldPath: string, dimension: Dimension, regionX: number, regionZ: number): Uint8ClampedArray<ArrayBuffer> {
+  // Init map pixels
+  const tex = new Uint8ClampedArray(REGION_SIZE*REGION_SIZE * IMG_CHANNELS);
+
   const dimensionSubPath = getDimensionSubPath(dimension);
-  const regionFile = readFileSync(`${worldPath}/${dimensionSubPath}/r.${regionX}.${regionZ}.mca`);
+  let regionFile: Buffer;
+  try {
+    regionFile = readFileSync(`${worldPath}/${dimensionSubPath}/r.${regionX}.${regionZ}.mca`);
+  } catch (e) {
+    return tex;
+  }
+
   const region = Anvil.fromBuffer(regionFile.buffer);
   const chunks = region.getAllChunks();
   let effectiveHeightmap: number[][] = [];
   const worldBottom = dimension === "overworld" ? -64 : 0;
-
-  // Init map pixels
-  const mapPixels = new Uint8ClampedArray(REGION_SIZE*REGION_SIZE * IMG_CHANNELS);
 
   for (const chunk of chunks) {
     const chunkCoords = chunk.worldCoordinates()!;
@@ -80,22 +134,14 @@ export function generateTile(worldPath: string, outputPath: string, dimension: D
       }
 
       const pixelOffset = (regionZ*REGION_SIZE + regionX) * IMG_CHANNELS;
-      mapPixels[pixelOffset]   = color[0];
-      mapPixels[pixelOffset+1] = color[1];
-      mapPixels[pixelOffset+2] = color[2];
-      mapPixels[pixelOffset+3] = color[3];
+      tex[pixelOffset]   = color[0];
+      tex[pixelOffset+1] = color[1];
+      tex[pixelOffset+2] = color[2];
+      tex[pixelOffset+3] = color[3];
     }
   }
 
-  // Image Output
-  sharp(mapPixels, {
-    raw: {
-      width: REGION_SIZE,
-      height: REGION_SIZE,
-      channels: IMG_CHANNELS
-    }
-  }).webp({ lossless: true })
-    .toFile(`${outputPath}/${regionX}.${regionZ}.webp`);
+  return tex;
 }
 
 function getMapColor(region: Anvil, chunk: Chunk, block: BlockInstance | undefined): number[] | null {
@@ -1706,3 +1752,4 @@ blocks.polished_tuff = 45;
 blocks.polished_tuff_stairs = 45;
 blocks.polished_tuff_slab = 45;
 blocks.polished_tuff_wall = 45;
+// blocks.bedrock = 0;

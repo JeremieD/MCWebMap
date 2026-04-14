@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { argv } from "node:process";
-import { clearCache } from "./lib/chunk.ts";
-import { generateTile } from "./lib/map.ts";
+import { generateTile, TILE_SIZE } from "./lib/map.ts";
 import type { Dimension } from "./lib/util.ts";
 import { getDimensionSubPath, round } from "./lib/util.ts";
 
@@ -9,7 +8,6 @@ import { getDimensionSubPath, round } from "./lib/util.ts";
 // - Fix top border of region tiles being brighter
 // - Prettier & faster biome smoothing
 //   - Use dithering? → Use only 4 samples per block, but alternate which ones based on coords parity
-// - More intelligent check to see which tiles need to be refreshed → store LastUpdate or something.
 // - Check waterloggable blocks / blocks like kelp
 //   - it seems waterlogged blocks are treated as water for map purposes?
 //   - but mca-json is garbage and does not return block state
@@ -24,22 +22,20 @@ import { getDimensionSubPath, round } from "./lib/util.ts";
 // - Or maybe... only deep oceans have their own colour. that way you can tell the temperature, but it doesnt interfere with the shore
 // - Deep oceans are useless to mark and confusing because there is already depth shading.
 //   - What if it was based directly on temperature noise instead?
-// - Test if bigger tiles is more efficient
 
 const worldPath = argv[2];
 if (!worldPath) console.error("Please specify the world for which to generate map tiles.");
 
 const metaFilePath = "meta.json";
 
-const dimension = "overworld";
+const dimension = "end";
 
 generateAllTiles(worldPath, `output/${dimension}`, dimension);
-// generateTile(worldPath, `output/${dimension}`, dimension, 0, -1);
+// generateTile(worldPath, `output/${dimension}`, dimension, 0, 0);
 
 function generateAllTiles(worldPath: string, outputPath: string, dimension: Dimension) {
   const inputPath = `${worldPath}/${getDimensionSubPath(dimension)}`;
   const folder = readdirSync(inputPath);
-  const regionCount = folder.length;
   const bounds = {
     north: 0,
     east: 0,
@@ -55,30 +51,49 @@ function generateAllTiles(worldPath: string, outputPath: string, dimension: Dime
 
   mkdirSync(outputPath, { recursive: true });
 
+  const tilesToGenerate = new Map<string, [tileX: number, tileZ: number]>();
+
+  // FIRST PASS: Find out what needs to be generated
   for (const [i, regionFile] of Object.entries(folder)) {
     const parts = regionFile.split(".");
     if (parts[0] !== "r" || parts[3] !== "mca") console.error("Ignoring file " + regionFile);
-
     const regionX = parseInt(parts[1]);
     const regionZ = parseInt(parts[2]);
-    const regionKey = `${regionX}.${regionZ}`;
 
+    const tileX = Math.floor(regionX / TILE_SIZE);
+    const tileZ = Math.floor(regionZ / TILE_SIZE);
+    const tileKey = `${tileX}.${tileZ}`;
+
+    const stats = statSync(`${inputPath}/${regionFile}`);
+    const modTime = stats.mtimeMs;
+
+    // Skip if empty
+    if (stats.size === 0) continue;
+
+    // Skip if unchanged
+    if (existsSync(`${outputPath}/0/${tileKey}.webp`) &&
+        modTime <= modTimes[tileKey]) continue;
+
+    // Write tile modTime
+    if (modTimes[tileKey] === undefined || modTime > modTimes[tileKey]) modTimes[tileKey] = modTime;
+
+    // Update bounds
     if (regionZ < bounds.north) bounds.north = regionZ;
     if (regionX > bounds.east)  bounds.east  = regionX;
     if (regionZ > bounds.south) bounds.south = regionZ;
     if (regionX < bounds.west)  bounds.west  = regionX;
 
-    // Check if tile needs to be generated
-    const modTime = statSync(`${inputPath}/r.${regionKey}.mca`).mtimeMs;
-    if (existsSync(`${outputPath}/${regionKey}.webp`) &&
-        modTimes[regionKey] >= modTime) continue;
+    tilesToGenerate.set(tileKey, [tileX, tileZ]);
+  }
 
-    console.log(`${round(Number(i)/regionCount * 100)}% Generating tile for region ${regionX}, ${regionZ}`);
+  console.log("Tiles to update: ", tilesToGenerate);
 
-    generateTile(worldPath, outputPath, dimension, regionX, regionZ);
-    modTimes[regionKey] = modTime;
-
-    clearCache();
+  // SECOND PASS: Generate tiles
+  const tileCount = tilesToGenerate.size;
+  let i = 0;
+  for (const [_, [tileX, tileZ]] of tilesToGenerate) {
+    console.log(`${round(i++ / tileCount * 100)}% Generating tile ${tileX}, ${tileZ}.`);
+    generateTile(worldPath, outputPath, dimension, tileX, tileZ);
   }
 
   const metaData = {

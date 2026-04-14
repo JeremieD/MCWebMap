@@ -76,10 +76,10 @@ export class JejMap extends HTMLElement {
     this.#offsetX = parseFloat(this.getAttribute("offsetx") ?? ".5");
     this.#offsetY = parseFloat(this.getAttribute("offsety") ?? ".5");
 
+    // Coordinate space
     fetch(`${this.#src}/meta.json`).then(async response => {
       const data = await response.json();
 
-      // Coordinate space
       const bounds = data.bounds;
       this.origin = [-bounds.west*REGION_SIZE, -bounds.north*REGION_SIZE];
       const colCount = Math.abs(bounds.east  - bounds.west)  + 1;
@@ -87,15 +87,18 @@ export class JejMap extends HTMLElement {
       this.width  = colCount * REGION_SIZE;
       this.height = rowCount * REGION_SIZE;
 
-      // POI data
+      this.panX(-bounds.west*REGION_SIZE);
+      this.panY(-bounds.north*REGION_SIZE);
+      this.zoom = .75;
+    });
+
+    // POI data
+    fetch(`${this.#src}/pois.json`).then(async response => {
+      const data = await response.json();
       for (const poi of data.pois ?? []) {
         const pin = new JejPin(poi);
         this.#pins.append(pin);
       }
-
-      this.panX(-bounds.west*REGION_SIZE);
-      this.panY(-bounds.north*REGION_SIZE);
-      this.zoom = .75;
     });
   }
 
@@ -167,30 +170,29 @@ export class JejMap extends HTMLElement {
     const topLeft  = this.fromViewSpace(0, 0);
     const botRight = this.fromViewSpace(rect.right, rect.bottom);
     const effectiveBounds = {
-      north: Math.floor((topLeft.y  - this.origin[1]) / REGION_SIZE),
-      west:  Math.floor((topLeft.x  - this.origin[0]) / REGION_SIZE),
-      east:  Math.floor((botRight.x - this.origin[0]) / REGION_SIZE),
-      south: Math.floor((botRight.y - this.origin[1]) / REGION_SIZE)
+      north: Math.floor((topLeft.y  - this.origin[1]) / REGION_SIZE / 4),
+      west:  Math.floor((topLeft.x  - this.origin[0]) / REGION_SIZE / 4),
+      east:  Math.floor((botRight.x - this.origin[0]) / REGION_SIZE / 4),
+      south: Math.floor((botRight.y - this.origin[1]) / REGION_SIZE / 4)
     };
 
     for (let x = effectiveBounds.west;  x <= effectiveBounds.east;  x++)
     for (let z = effectiveBounds.north; z <= effectiveBounds.south; z++) {
-      const regionKey = `${x}.${z}`;
-      if (!this.#tileRequests[regionKey]) {
-        this.#tileRequests[regionKey] = fetch(`${this.#src}/${regionKey}.webp`)
+      const tileKey = `${x}.${z}`;
+      if (!this.#tileRequests[tileKey]) {
+        this.#tileRequests[tileKey] = fetch(`${this.#src}/${tileKey}.webp`)
         .then(async (res: Response) => {
           if (!res.ok) return;
-          this.#tiles[regionKey] = await createImageBitmap(await res.blob());
+          this.#tiles[tileKey] = await createImageBitmap(await res.blob());
         });
       }
-      if (!this.#tiles[regionKey]) continue;
+      if (!this.#tiles[tileKey]) continue;
 
-      const regionX = this.#zoom * (this.origin[0] + x*REGION_SIZE - this.#panX + this.width/2) + offsetX;
-      const regionY = this.#zoom * (this.origin[1] + z*REGION_SIZE - this.#panY + this.height/2) + offsetY;
-      const regionWidth = this.#zoom * REGION_SIZE;
-      const regionHeight = regionWidth;
+      const tileX = this.#zoom * (this.origin[0] + x*REGION_SIZE*4 - this.#panX + this.width/2) + offsetX;
+      const tileY = this.#zoom * (this.origin[1] + z*REGION_SIZE*4 - this.#panY + this.height/2) + offsetY;
+      const tileSize = this.#zoom * REGION_SIZE * 4;
 
-      this.#canvas.drawImage(this.#tiles[regionKey]!, regionX, regionY, regionWidth, regionHeight);
+      this.#canvas.drawImage(this.#tiles[tileKey]!, tileX, tileY, tileSize, tileSize);
     }
 
     requestAnimationFrame(_ => { this.#draw() });
