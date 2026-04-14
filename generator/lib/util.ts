@@ -21,14 +21,17 @@ export function getDimensionSubPath(dimension: Dimension | string | undefined) {
     case "nether":
     case "the_nether":
     case "-1":
-      return "DIM-1/region";
+      return "dimensions/minecraft/the_nether/region";
+      return "DIM-1/region"; // Pre 26.1
 
     case "end":
     case "the_end":
     case "1":
-      return "DIM1/region";
+      return "dimensions/minecraft/the_end/region";
+      return "DIM1/region"; // Pre 26.1
 
     default:
-      return "region";
+      return "dimensions/minecraft/overworld/region";
+      return "region"; // Pre 26.1
   }
 };
