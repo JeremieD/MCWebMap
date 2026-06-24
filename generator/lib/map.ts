@@ -6,7 +6,7 @@ import { clearCache, getBiome, getHighestBlock, getStatus, getWaterDepth, isWate
 import type { Dimension } from "./util.ts";
 import { getDimensionSubPath, mod, REGION_SIZE, SECTION_SIZE } from "./util.ts";
 
-const IMG_CHANNELS = 4; // RGBA
+export const IMG_CHANNELS = 4; // RGBA
 export const TILE_SIZE = 4; // Width of a tile, in regions
 
 export function generateTile(worldPath: string, outputPath: string, dimension: Dimension, tileX: number, tileZ: number) {
@@ -23,18 +23,18 @@ export function generateTile(worldPath: string, outputPath: string, dimension: D
   }
 
   // Image Output
-  mkdirSync(`${outputPath}/0`, { recursive: true });
-  sharp(stitchTile(regionMaps), {
+  mkdirSync(`${outputPath}/1`, { recursive: true });
+  sharp(stitchRegions(regionMaps), {
     raw: {
       width: REGION_SIZE*TILE_SIZE,
       height: REGION_SIZE*TILE_SIZE,
       channels: IMG_CHANNELS
     }
   }).webp({ lossless: true, effort: 6 })
-    .toFile(`${outputPath}/0/${tileX}.${tileZ}.webp`);
+    .toFile(`${outputPath}/1/${tileX}.${tileZ}.webp`);
 }
 
-function stitchTile(subTiles: Uint8ClampedArray<ArrayBuffer>[]): Uint8ClampedArray<ArrayBuffer>  {
+function stitchRegions(subTiles: Uint8ClampedArray<ArrayBuffer>[]): Uint8ClampedArray<ArrayBuffer>  {
   const size = REGION_SIZE * TILE_SIZE;
   const tex = new Uint8ClampedArray(size*size * IMG_CHANNELS);
 
@@ -46,6 +46,28 @@ function stitchTile(subTiles: Uint8ClampedArray<ArrayBuffer>[]): Uint8ClampedArr
     for (let z = 0; z < REGION_SIZE; z++) {
       const originOffset = (z*REGION_SIZE + x) * IMG_CHANNELS;
       const destinationOffset = (subTileOffset + z*REGION_SIZE*TILE_SIZE + x) * IMG_CHANNELS;
+      tex[destinationOffset]   = subTiles[i][originOffset];
+      tex[destinationOffset+1] = subTiles[i][originOffset+1];
+      tex[destinationOffset+2] = subTiles[i][originOffset+2];
+      tex[destinationOffset+3] = subTiles[i][originOffset+3];
+    }
+  }
+
+  return tex;
+}
+
+export function stitchTiles(subTiles: Uint8ClampedArray<ArrayBuffer>[]): Uint8ClampedArray<ArrayBuffer> {
+  const size = 2048;
+  const tex = new Uint8ClampedArray(size*size * IMG_CHANNELS);
+
+  for (let i = 0; i < 4; i++) {
+    const subTileX = Math.floor(i / 2) * 1024;
+    const subTileZ = (i % 2) * 1024 * 2048;
+    const subTileOffset = subTileX + subTileZ;
+    for (let x = 0; x < 1024; x++)
+    for (let z = 0; z < 1024; z++) {
+      const originOffset = (z*1024 + x) * IMG_CHANNELS;
+      const destinationOffset = (subTileOffset + z*2048 + x) * IMG_CHANNELS;
       tex[destinationOffset]   = subTiles[i][originOffset];
       tex[destinationOffset+1] = subTiles[i][originOffset+1];
       tex[destinationOffset+2] = subTiles[i][originOffset+2];
@@ -121,6 +143,7 @@ function mapRegion(worldPath: string, dimension: Dimension, regionX: number, reg
 
         } else { // Top shading
           if (regionZ > 0) {
+            // @IDEA: More levels of shading depending on height difference?
             const northNeighbourY = effectiveHeightmap[regionX][regionZ - 1];
             if (y < northNeighbourY) shade = brightness.low;       // Current block is lower
             else if (y > northNeighbourY) shade = brightness.high; // Current block is higher

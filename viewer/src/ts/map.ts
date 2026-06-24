@@ -156,6 +156,7 @@ export class JejMap extends HTMLElement {
     const rect = this.getBoundingClientRect();
     const offsetX = rect.width*this.#offsetX - this.#zoom*this.width/2;
     const offsetY = rect.height*this.#offsetY - this.#zoom*this.height/2;
+    const lod = this.#zoom < .5 ? 2 : 1;
 
     // Pins
     for (const pin of Array.from(this.#pins.querySelectorAll("jej-pin")) as JejPin[]) {
@@ -170,15 +171,15 @@ export class JejMap extends HTMLElement {
     const topLeft  = this.fromViewSpace(0, 0);
     const botRight = this.fromViewSpace(rect.right, rect.bottom);
     const effectiveBounds = {
-      north: Math.floor((topLeft.y  - this.origin[1]) / REGION_SIZE / 4),
-      west:  Math.floor((topLeft.x  - this.origin[0]) / REGION_SIZE / 4),
-      east:  Math.floor((botRight.x - this.origin[0]) / REGION_SIZE / 4),
-      south: Math.floor((botRight.y - this.origin[1]) / REGION_SIZE / 4)
+      north: Math.floor((topLeft.y  - this.origin[1]) / REGION_SIZE / 4 / lod),
+      west:  Math.floor((topLeft.x  - this.origin[0]) / REGION_SIZE / 4 / lod),
+      east:  Math.floor((botRight.x - this.origin[0]) / REGION_SIZE / 4 / lod),
+      south: Math.floor((botRight.y - this.origin[1]) / REGION_SIZE / 4 / lod)
     };
 
     for (let x = effectiveBounds.west;  x <= effectiveBounds.east;  x++)
     for (let z = effectiveBounds.north; z <= effectiveBounds.south; z++) {
-      const tileKey = `${x}.${z}`;
+      const tileKey = `${lod}/${x}.${z}`;
       if (!this.#tileRequests[tileKey]) {
         this.#tileRequests[tileKey] = fetch(`${this.#src}/${tileKey}.webp`)
         .then(async (res: Response) => {
@@ -188,9 +189,9 @@ export class JejMap extends HTMLElement {
       }
       if (!this.#tiles[tileKey]) continue;
 
-      const tileX = this.#zoom * (this.origin[0] + x*REGION_SIZE*4 - this.#panX + this.width/2) + offsetX;
-      const tileY = this.#zoom * (this.origin[1] + z*REGION_SIZE*4 - this.#panY + this.height/2) + offsetY;
-      const tileSize = this.#zoom * REGION_SIZE * 4;
+      const tileX = this.#zoom * (this.origin[0] + x*REGION_SIZE*4*lod - this.#panX + this.width/2) + offsetX;
+      const tileY = this.#zoom * (this.origin[1] + z*REGION_SIZE*4*lod - this.#panY + this.height/2) + offsetY;
+      const tileSize = this.#zoom * REGION_SIZE * 4 * lod;
 
       this.#canvas.drawImage(this.#tiles[tileKey]!, tileX, tileY, tileSize, tileSize);
     }
