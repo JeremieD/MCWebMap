@@ -67,6 +67,12 @@ function generateAllTiles(worldPath: string, outputPath: string, dimension: Dime
     const stats = statSync(`${inputPath}/${regionFile}`);
     const modTime = stats.mtimeMs;
 
+    // Update bounds
+    if (regionZ < bounds.north) bounds.north = regionZ;
+    if (regionX > bounds.east)  bounds.east  = regionX;
+    if (regionZ > bounds.south) bounds.south = regionZ;
+    if (regionX < bounds.west)  bounds.west  = regionX;
+
     // Skip if empty
     if (stats.size === 0) continue;
 
@@ -76,12 +82,6 @@ function generateAllTiles(worldPath: string, outputPath: string, dimension: Dime
 
     // Write tile modTime
     if (modTimes[tileKey] === undefined || modTime > modTimes[tileKey]) modTimes[tileKey] = modTime;
-
-    // Update bounds
-    if (regionZ < bounds.north) bounds.north = regionZ;
-    if (regionX > bounds.east)  bounds.east  = regionX;
-    if (regionZ > bounds.south) bounds.south = regionZ;
-    if (regionX < bounds.west)  bounds.west  = regionX;
 
     tilesToGenerate.set(tileKey, [tileX, tileZ]);
   }
