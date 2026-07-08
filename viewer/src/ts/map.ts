@@ -2,11 +2,14 @@ import { JejPin } from "./pin";
 import { isMac, normalizeWheel } from "./utilities";
 
 const REGION_SIZE = 512;
+const CHUNK_SIZE  = 16;
 
 export class JejMap extends HTMLElement {
   #evCache: PointerEvent[] = [];
   #prevDiff = -1;
-  #pointerOriginX = 0;
+  #pointerOriginXSS = 0; // screen space
+  #pointerOriginYSS = 0;
+  #pointerOriginX = 0;   // world space
   #pointerOriginY = 0;
   #scrollFactor = isMac ? -.01 : .25;
   #zoom = 1;
@@ -17,6 +20,8 @@ export class JejMap extends HTMLElement {
   #src = "";
   #tileRequests: { [regionKey: string]: Promise<ImageBitmap | void> } = {};
   #tiles: { [regionKey: string]: ImageBitmap } = {};
+  #measuring = false;
+  #measurePoints: [number, number][] = [];
 
   // Layers
   #hud:  HTMLElement;
@@ -26,6 +31,7 @@ export class JejMap extends HTMLElement {
 
   // HUD Elements
   #coords: HTMLOutputElement;
+  #region: HTMLOutputElement;
 
   // Coordinate space
   origin  = [0, 0];
@@ -34,8 +40,11 @@ export class JejMap extends HTMLElement {
   minZoom = .0625;
   maxZoom = 8;
 
+  showGrid = false;
+
   constructor() {
     super();
+    this.addEventListener("contextmenu", e => this.#rightClickHandler(e));
     this.addEventListener("pointerdown", e => this.#downHandler(e),  { passive: true });
     addEventListener("pointermove",      e => this.#moveHandler(e),  { passive: true });
     addEventListener("pointerup",        e => this.#upHandler(e),    { passive: true });
@@ -54,6 +63,7 @@ export class JejMap extends HTMLElement {
     this.#hud  = this.querySelector(".hud")!;
 
     this.#coords = document.getElementById("coords")! as HTMLOutputElement;
+    this.#region = document.getElementById("region")! as HTMLOutputElement;
   }
 
   connectedCallback() {
@@ -102,18 +112,28 @@ export class JejMap extends HTMLElement {
     });
   }
 
+  #rightClickHandler(e: MouseEvent) {
+    this.#measuring = true;
+    this.addMeasurePoint(...this.toWorldSpace(e.clientX, e.clientY, true));
+    e.preventDefault();
+  }
+
   #downHandler(e: PointerEvent) {
     if (e.target !== this.#canvasElement) return;
+    if (e.button !== 0) return;
     this.#evCache.push(e);
-    const clientPos = this.fromViewSpace(e.clientX, e.clientY);
-    this.#pointerOriginX = clientPos.x;
-    this.#pointerOriginY = clientPos.y;
+    const [x, y] = this.toWorldSpace(e.clientX, e.clientY, true);
+    this.#pointerOriginXSS = e.clientX;
+    this.#pointerOriginYSS = e.clientY;
+    this.#pointerOriginX = x;
+    this.#pointerOriginY = y;
     this.classList.add("dragging");
   }
 
   #moveHandler(e: PointerEvent) {
-    const { x, y } = this.fromViewSpace(e.clientX, e.clientY);
-    this.#coords.textContent = `${Math.floor(x - this.origin[0])} ${Math.floor(y - this.origin[1])}`;
+    const [ x, y ] = this.toWorldSpace(e.clientX, e.clientY, true);
+    this.#coords.textContent = `${Math.floor(x)} ${Math.floor(y)}`;
+    this.#region.textContent = `r ${Math.floor(x/REGION_SIZE)} ${Math.floor(y/REGION_SIZE)}`;
 
     const i = this.#evCache.findIndex(e2 => e2.pointerId === e.pointerId);
     this.#evCache[i] = e;
@@ -133,6 +153,13 @@ export class JejMap extends HTMLElement {
   }
 
   #upHandler(e: PointerEvent) {
+    const dx = e.clientX - this.#pointerOriginXSS;
+    const dy = e.clientY - this.#pointerOriginYSS;
+
+    if (dx === 0 && dy === 0) { // It was a single click
+      this.addMeasurePoint(...this.toWorldSpace(e.clientX, e.clientY, true));
+    }
+
     const i = this.#evCache.findIndex(e2 => e2.pointerId === e.pointerId);
     this.#evCache.splice(i, 1);
     if (this.#evCache.length < 2) this.#prevDiff = -1;
@@ -142,39 +169,41 @@ export class JejMap extends HTMLElement {
   #wheelHandler(e: WheelEvent) {
     if (e.target !== this.#canvasElement) return;
     const deltaY = normalizeWheel(e);
-    let { x, y } = this.fromViewSpace(e.clientX, e.clientY);
+    let [ x, y ] = this.toWorldSpace(e.clientX, e.clientY);
     this.panX(x);
     this.panY(y);
     this.zoom = this.#zoom + deltaY*this.#zoom*this.#scrollFactor;
     const rect = this.getBoundingClientRect();
-    ({ x, y } = this.fromViewSpace(rect.width - e.clientX, rect.height - e.clientY));
+    ([ x, y ] = this.toWorldSpace(rect.width - e.clientX, rect.height - e.clientY));
     this.panX(x);
     this.panY(y);
   }
 
   #draw() {
     const rect = this.getBoundingClientRect();
-    const offsetX = rect.width*this.#offsetX - this.#zoom*this.width/2;
-    const offsetY = rect.height*this.#offsetY - this.#zoom*this.height/2;
     const lod = this.#zoom < .5 ? 2 : 1;
+    const tileSizeBlocks = REGION_SIZE * 4 * lod;       // Size of a tile in blocks in the world
+    const tileSizePixels = tileSizeBlocks * this.#zoom; // Size of a tile in pixels on screen
 
     // Pins
-    for (const pin of Array.from(this.#pins.querySelectorAll("jej-pin")) as JejPin[]) {
+    for (const pin of Array.from(this.#pins.children) as JejPin[]) {
       pin.classList.toggle("hidden", this.#zoom >= pin.maxZoom || this.#zoom < pin.minZoom);
       pin.classList.toggle("detailed", this.#zoom >= pin.detailedZoom);
-      pin.style.setProperty("--x", this.#zoom*(this.origin[0] + pin.x - this.#panX + this.width/2) + offsetX + "px");
-      pin.style.setProperty("--y", this.#zoom*(this.origin[1] + pin.y - this.#panY + this.height/2) + offsetY + "px");
+      const [x, y] = this.toScreenSpace(pin.x, pin.y, rect);
+      pin.style.setProperty("--x", x + "px");
+      pin.style.setProperty("--y", y + "px");
     }
 
-    // Canvas
     this.#canvas.clearRect(0, 0, rect.width, rect.height); // Clear
-    const topLeft  = this.fromViewSpace(0, 0);
-    const botRight = this.fromViewSpace(rect.right, rect.bottom);
+
+    // Tiles
+    const topLeft  = this.toWorldSpace(0, 0, true);
+    const botRight = this.toWorldSpace(rect.right, rect.bottom, true);
     const effectiveBounds = {
-      north: Math.floor((topLeft.y  - this.origin[1]) / REGION_SIZE / 4 / lod),
-      west:  Math.floor((topLeft.x  - this.origin[0]) / REGION_SIZE / 4 / lod),
-      east:  Math.floor((botRight.x - this.origin[0]) / REGION_SIZE / 4 / lod),
-      south: Math.floor((botRight.y - this.origin[1]) / REGION_SIZE / 4 / lod)
+      north: Math.floor(topLeft[1]  / tileSizeBlocks),
+      west:  Math.floor(topLeft[0]  / tileSizeBlocks),
+      east:  Math.floor(botRight[0] / tileSizeBlocks),
+      south: Math.floor(botRight[1] / tileSizeBlocks)
     };
 
     for (let x = effectiveBounds.west;  x <= effectiveBounds.east;  x++)
@@ -189,22 +218,100 @@ export class JejMap extends HTMLElement {
       }
       if (!this.#tiles[tileKey]) continue;
 
-      const tileX = this.#zoom * (this.origin[0] + x*REGION_SIZE*4*lod - this.#panX + this.width/2) + offsetX;
-      const tileY = this.#zoom * (this.origin[1] + z*REGION_SIZE*4*lod - this.#panY + this.height/2) + offsetY;
-      const tileSize = this.#zoom * REGION_SIZE * 4 * lod;
+      const [tileX, tileY] = this.toScreenSpace(x*tileSizeBlocks, z*tileSizeBlocks, rect);
+      this.#canvas.drawImage(this.#tiles[tileKey]!, tileX, tileY, tileSizePixels, tileSizePixels);
+    }
 
-      this.#canvas.drawImage(this.#tiles[tileKey]!, tileX, tileY, tileSize, tileSize);
+    // Grid
+    if (this.showGrid) {
+      this.#canvas.strokeStyle = "black";
+      this.#canvas.lineWidth = this.zoom > 4 ? 2 : 1;
+
+      // Vertical region lines
+      for (let x = Math.ceil(topLeft[0] / REGION_SIZE) * REGION_SIZE; x <= botRight[0]; x += REGION_SIZE) {
+        const xSS = this.toScreenSpaceX(x, rect);
+        this.#canvas.beginPath();
+        this.#canvas.moveTo(xSS, 0);
+        this.#canvas.lineTo(xSS, rect.bottom);
+        this.#canvas.stroke();
+      }
+      // Horizontal region lines
+      for (let y = Math.ceil(topLeft[1] / REGION_SIZE) * REGION_SIZE; y <= botRight[1]; y += REGION_SIZE) {
+        const ySS = this.toScreenSpaceY(y, rect);
+        this.#canvas.beginPath();
+        this.#canvas.moveTo(0, ySS);
+        this.#canvas.lineTo(rect.right, ySS);
+        this.#canvas.stroke();
+      }
+
+      if (this.zoom > 4) {
+        this.#canvas.strokeStyle = "rgba(0,0,0, .5)";
+        // Vertical chunk lines
+        for (let x = Math.ceil(topLeft[0] / CHUNK_SIZE) * CHUNK_SIZE; x <= botRight[0]; x += CHUNK_SIZE) {
+          const xSS = this.toScreenSpaceX(x, rect);
+          this.#canvas.beginPath();
+          this.#canvas.moveTo(xSS, 0);
+          this.#canvas.lineTo(xSS, rect.bottom);
+          this.#canvas.stroke();
+        }
+        // Horizontal chunk lines
+        for (let y = Math.ceil(topLeft[1] / CHUNK_SIZE) * CHUNK_SIZE; y <= botRight[1]; y += CHUNK_SIZE) {
+          const ySS = this.toScreenSpaceY(y, rect);
+          this.#canvas.beginPath();
+          this.#canvas.moveTo(0, ySS);
+          this.#canvas.lineTo(rect.right, ySS);
+          this.#canvas.stroke();
+        }
+      }
+    }
+
+    // Measure lines
+    if (this.#measuring) {
+      this.#canvas.beginPath();
+      this.#canvas.moveTo(...this.toScreenSpace(...this.#measurePoints[0], rect));
+      for (let i = 1; i < this.#measurePoints.length; i++) {
+        const [x, y] = this.toScreenSpace(...this.#measurePoints[i], rect);
+        this.#canvas.lineTo(x, y);
+      }
+      this.#canvas.strokeStyle = "white";
+      this.#canvas.lineWidth = 4;
+      this.#canvas.stroke();
+      this.#canvas.strokeStyle = "black";
+      this.#canvas.lineWidth = 2;
+      this.#canvas.stroke();
     }
 
     requestAnimationFrame(_ => { this.#draw() });
   }
 
-  fromViewSpace(clientX: number, clientY: number) {
+  /** Transforms screen space coords to world space, where 1u = 1 block. */
+  toWorldSpace(x: number, y: number, actual = false): [ x: number, y: number ] {
     const rect = this.getBoundingClientRect();
-    return {
-      x: this.#panX + (clientX - rect.x - rect.width*this.#offsetX) / this.#zoom,
-      y: this.#panY + (clientY - rect.y - rect.height*this.#offsetY) / this.#zoom
-    };
+    return [
+      this.#panX + (x - rect.x - rect.width*this.#offsetX)  / this.#zoom - (actual ? this.origin[0] : 0),
+      this.#panY + (y - rect.y - rect.height*this.#offsetY) / this.#zoom - (actual ? this.origin[1] : 0)
+    ];
+  }
+
+  /** Transforms world space coords to screen space, where 1u = 1 canvas pixel. */
+  toScreenSpace(x: number, y: number, rect?: DOMRect): [ x: number, y: number ] {
+    rect ??= this.getBoundingClientRect();
+    return [
+      this.toScreenSpaceX(x, rect),
+      this.toScreenSpaceY(y, rect)
+    ];
+  }
+
+  toScreenSpaceX(x: number, rect?: DOMRect): number {
+    rect ??= this.getBoundingClientRect();
+    const offsetX = rect.width*this.#offsetX  - this.#zoom*this.width/2;
+    return this.#zoom*(this.origin[0] + x - this.#panX + this.width/2) + offsetX;
+  }
+
+  toScreenSpaceY(y: number, rect?: DOMRect): number {
+    rect ??= this.getBoundingClientRect();
+    const offsetY = rect.height*this.#offsetY - this.#zoom*this.height/2;
+    return this.#zoom*(this.origin[1] + y - this.#panY + this.height/2) + offsetY;
   }
 
   panX(x: number): number | void {
@@ -264,7 +371,22 @@ export class JejMap extends HTMLElement {
     this.zoom = Math.min(zoomX, zoomY);
   }
 
+  addMeasurePoint(x: number, y: number) {
+    this.#measurePoints.push([x, y]);
+    console.log(dist(this.#measurePoints), this.#measurePoints);
+  }
+
   static get observedAttributes() { return [ "src" ]; }
 }
 
 customElements.define("jej-map", JejMap);
+
+function dist(points: [number, number][]): number {
+  let d = 0;
+  for (let i = 1; i < points.length; i++) {
+    const [x1, y1] = points[i-1];
+    const [x2, y2] = points[i];
+    d += Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+  }
+  return d;
+}

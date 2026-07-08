@@ -44,7 +44,7 @@
                 <button class="toggle-knob"></button>
               </div>
             </div>
-            <div class="toggle-group" style="display: none;">
+            <div class="toggle-group">
               <label for="main-hud-show-grid">Afficher la grille</label>
               <div id="main-hud-show-grid" class="toggle-gizmo">
                 <div class="toggle-groove">
@@ -55,7 +55,10 @@
               </div>
             </div>
           </div>
-          <output id="coords"></output>
+          <div class="botleft">
+            <output id="region"></output>
+            <output id="coords"></output>
+          </div>
           <div id="zoom-controls" class="button-group vertical">
             <button id="zoom-in" class="square">+</button>
             <button id="zoom-out" class="square">–</button>

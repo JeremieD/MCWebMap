@@ -6,6 +6,7 @@ import { JejMap } from "./map";
 
 const V: {
   map: JejMap,
+  region: HTMLOutputElement,
   mainHUD: HTMLElement,
   hudToggle: HTMLElement,
   dimensionToggle: HTMLElement,
@@ -19,6 +20,7 @@ export async function initView() {
   console.log("Initializing view...");
 
   V.map = document.getElementById("map") as JejMap;
+  V.region = document.getElementById("region") as HTMLOutputElement;
 
   // Main HUD
   V.mainHUD = document.getElementById("main-hud")!;
@@ -50,6 +52,8 @@ export async function initView() {
   V.gridToggle = document.getElementById("main-hud-show-grid")!;
   V.gridToggle.addEventListener("click", () => {
     V.gridToggle.classList.toggle("selected");
+    V.region.classList.toggle("visible");
+    V.map.showGrid = !V.map.showGrid;
   }, { passive: true });
 
   // Zoom contols

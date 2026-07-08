@@ -201,21 +201,29 @@ hr {
   }
 }
 
-#coords {
+.botleft {
   position: absolute;
   left: 1rem;
   bottom: 1rem;
-  padding: .5rem;
-  line-height: 1;
-  font-feature-settings: "kern" off;
-  color: #282828;
-  border: 3px solid #282828;
-  background-color: #CCCC;
-  backdrop-filter: blur(3px);
-  box-shadow: 3px  3px 0 0 #FFF5 inset,
-             -3px -3px 0 0 #EEE5 inset;
-  user-select: all;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: .5rem;
+
+  &>* {
+    padding: .5rem;
+    line-height: 1;
+    font-feature-settings: "kern" off;
+    color: #282828;
+    border: 3px solid #282828;
+    background-color: #CCCC;
+    backdrop-filter: blur(3px);
+    box-shadow: 3px  3px 0 0 #FFF5 inset,
+              -3px -3px 0 0 #EEE5 inset;
+    user-select: all;
+  }
 }
+#region:not(.visible) { display: none; }
 
 #zoom-controls {
   position: absolute;
