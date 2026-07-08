@@ -558,7 +558,11 @@ const colors = [
   [20, 180, 133, 255],  // 58 WARPED_WART_BLOCK
   [100, 100, 100, 255], // 59 DEEPSLATE
   [216, 175, 147, 255], // 60 RAW_IRON
-  [127, 167, 150, 255]  // 61 GLOW_LICHEN
+  [127, 167, 150, 255], // 61 GLOW_LICHEN
+  null,                 // 62 unassigned
+  null,                 // 63 unassigned
+  // — CUSTOM COLORS —
+  [173, 131, 126, 255]  // 64 DRIPSTONE
 ];
 const brightness = {
   lowest: 135 / 255,
@@ -1803,4 +1807,6 @@ blocks.polished_tuff = 45;
 blocks.polished_tuff_stairs = 45;
 blocks.polished_tuff_slab = 45;
 blocks.polished_tuff_wall = 45;
+blocks.dripstone_block = 64;
+blocks.pointed_dripstone = 64;
 // blocks.bedrock = 0;
