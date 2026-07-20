@@ -12,14 +12,17 @@ export class JejMap extends HTMLElement {
   #pointerOriginX = 0;   // world space
   #pointerOriginY = 0;
   #scrollFactor = isMac ? -.01 : .25;
-  #zoom = 1;
+  #zoom = .75;
   #panX = 256;
   #panY = 256;
   #offsetX = .5;
   #offsetY = .5;
   #src = "";
-  #tileRequests: { [regionKey: string]: Promise<ImageBitmap | void> } = {};
-  #tiles: { [regionKey: string]: ImageBitmap } = {};
+  #dimension: string = "overworld";
+  #snapshot: string = "";
+  #availableSnapshots: string[] = [];
+  #tileRequests: { [tileKey: string]: Promise<ImageBitmap | void> } = {};
+  #tiles: { [tileKey: string]: ImageBitmap } = {};
   #measuring = false;
   #measurePoints: [number, number][] = [];
 
@@ -38,7 +41,7 @@ export class JejMap extends HTMLElement {
   width   = 512; // blocks
   height  = 512; // blocks
   minZoom = .0625;
-  maxZoom = 8;
+  maxZoom = 16;
 
   showGrid = false;
 
@@ -73,16 +76,11 @@ export class JejMap extends HTMLElement {
     requestAnimationFrame(_ => { this.#draw() } );
   }
 
-  attributeChangedCallback() {
-    this.#init();
-  }
-
-  #init() {
-    this.#tileRequests = {};
-    this.#tiles = {};
+  #init(targetX?: number, targetY?: number, targetZoom?: number) {
     this.#pins.innerHTML = "";
 
-    this.#src = this.getAttribute("src") ?? "";
+    this.#src = `data/${this.#snapshot}/${this.#dimension}`;
+
     this.#offsetX = parseFloat(this.getAttribute("offsetx") ?? ".5");
     this.#offsetY = parseFloat(this.getAttribute("offsety") ?? ".5");
 
@@ -97,9 +95,15 @@ export class JejMap extends HTMLElement {
       this.width  = colCount * REGION_SIZE;
       this.height = rowCount * REGION_SIZE;
 
-      this.panX(-bounds.west*REGION_SIZE);
-      this.panY(-bounds.north*REGION_SIZE);
-      this.zoom = .75;
+      this.zoom = targetZoom ?? .75;
+      if (targetX !== undefined && targetY !== undefined) {
+        this.panX(targetX + this.origin[0]);
+        this.panY(targetY + this.origin[1]);
+      } else {
+        this.panX(this.origin[0]);
+        this.panY(this.origin[1]);
+      }
+
     });
 
     // POI data
@@ -208,9 +212,9 @@ export class JejMap extends HTMLElement {
 
     for (let x = effectiveBounds.west;  x <= effectiveBounds.east;  x++)
     for (let z = effectiveBounds.north; z <= effectiveBounds.south; z++) {
-      const tileKey = `${lod}/${x}.${z}`;
+      const tileKey = `${this.#src}/${lod}/${x}.${z}`;
       if (!this.#tileRequests[tileKey]) {
-        this.#tileRequests[tileKey] = fetch(`${this.#src}/${tileKey}.webp`)
+        this.#tileRequests[tileKey] = fetch(`${tileKey}.webp`)
         .then(async (res: Response) => {
           if (!res.ok) return;
           this.#tiles[tileKey] = await createImageBitmap(await res.blob());
@@ -338,6 +342,44 @@ export class JejMap extends HTMLElement {
   get offsetX() { return this.#offsetX; }
   get offsetY() { return this.#offsetY; }
 
+  set dimension(targetDimension: string) {
+    const originDimension = this.#dimension;
+
+    let targetX, targetY, targetZoom;
+    if (originDimension === "overworld" && targetDimension === "nether") {
+      // Overworld → Nether
+      targetX = (this.#panX - this.origin[0]) / 8;
+      targetY = (this.#panY - this.origin[1]) / 8;
+      targetZoom = this.#zoom * 8;
+
+    } else if (originDimension === "nether" && targetDimension === "overworld") {
+      // Nether → Overworld
+      targetX = (this.#panX - this.origin[0]) * 8;
+      targetY = (this.#panY - this.origin[1]) * 8;
+      targetZoom = this.#zoom / 8;
+
+    } else {
+      targetX = this.#panX - this.origin[0];
+      targetY = this.#panY - this.origin[1];
+      targetZoom = this.#zoom;
+    }
+
+    this.#dimension = targetDimension;
+    this.#init(targetX, targetY, targetZoom);
+  }
+
+  set snapshot(date: string) {
+    this.#snapshot = date;
+    this.#init(this.#panX - this.origin[0], this.#panY - this.origin[1], this.#zoom);
+  }
+  get snapshot() { return this.#snapshot; }
+
+  set availableSnapshots(dates: string[]) {
+    this.#availableSnapshots = dates;
+    this.#init();
+  }
+  get availableSnapshots() { return this.#availableSnapshots; }
+
   resetView() {
     this.#panX = this.width/2;
     this.#panY = this.height/2;
@@ -375,8 +417,6 @@ export class JejMap extends HTMLElement {
     this.#measurePoints.push([x, y]);
     console.log(dist(this.#measurePoints), this.#measurePoints);
   }
-
-  static get observedAttributes() { return [ "src" ]; }
 }
 
 customElements.define("jej-map", JejMap);

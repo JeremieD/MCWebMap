@@ -15,24 +15,28 @@
 </head>
 
 <body>
-
   <header></header>
 
   <main>
     <section>
-      <jej-map id="map" src="data/overworld">
+      <jej-map id="map">
         <canvas class="layer canvas"></canvas>
         <div class="layer pins"></div>
         <div class="layer hud">
           <div id="main-hud" class="hud-card collapsed">
             <button id="main-hud-toggle"><jej-icon icon="chevron-left"></jej-icon></button>
             <h1>Le monde</h1>
-            <p id="subtitle">au 31 mars 2026</p>
+            <p id="subtitle"></p>
             <hr>
             <div id="main-hud-dimension" class="button-group" aria-label="Dimension">
               <button value="overworld" class="overworld selected">Overworld</button>
               <button value="nether" class="nether">Nether</button>
               <button value="end" class="end">End</button>
+            </div>
+            <div class="slider-group">
+              <label>Dates antérieures</label>
+              <output id="main-hud-timeline-output"></output>
+              <jd-slider id="main-hud-timeline-slider"></jd-slider>
             </div>
             <div class="toggle-group">
               <label for="main-hud-show-pois">Afficher les points d’intérêt</label>

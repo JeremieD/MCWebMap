@@ -3,7 +3,7 @@ import { argv } from "node:process";
 import sharp from "sharp";
 import { generateTile, IMG_CHANNELS, stitchTiles, TILE_SIZE } from "./lib/map.ts";
 import type { Dimension } from "./lib/util.ts";
-import { getDimensionSubPath, REGION_SIZE, round } from "./lib/util.ts";
+import { getDimensionSubPath, round } from "./lib/util.ts";
 
 // TODO:
 // - Fix top border of region tiles being brighter
