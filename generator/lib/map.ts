@@ -562,7 +562,8 @@ const colors = [
   null,                 // 62 unassigned
   null,                 // 63 unassigned
   // — CUSTOM COLORS —
-  [173, 131, 126, 255]  // 64 DRIPSTONE
+  [173, 131, 126, 255], // 64 DRIPSTONE
+  [77, 122, 77, 255]    // 65 SPRUCE_LEAVES
 ];
 const brightness = {
   lowest: 135 / 255,
@@ -1769,7 +1770,11 @@ const blocks = {
   potted_closed_eyeblossom: 0,
   firefly_bush: 7
 };
-// Custom overrides
+
+
+/** Custom overrides */
+
+// Use actual colors for flowers
 blocks.allium = 16;
 blocks.azure_bluet = 22;
 blocks.blue_orchid = 17;
@@ -1792,7 +1797,11 @@ blocks.rose_bush = 28;
 blocks.sunflower = 18;
 blocks.pink_petals = 20;
 blocks.wildflowers = 18;
+
+// Ignore frogspawn
 blocks.frogspawn = 0;
+
+// Use a more appropriate color for tuff.
 blocks.tuff = 45;
 blocks.tuff_stairs = 45;
 blocks.tuff_slab = 45;
@@ -1807,6 +1816,22 @@ blocks.polished_tuff = 45;
 blocks.polished_tuff_stairs = 45;
 blocks.polished_tuff_slab = 45;
 blocks.polished_tuff_wall = 45;
+
+// Use a custom color for dripstone.
 blocks.dripstone_block = 64;
 blocks.pointed_dripstone = 64;
+
+// Use custom color for spruce leaves
+blocks.spruce_leaves = 65;
+
+// Use more accurate grays for diorite and calcite.
+blocks.calcite = 3;
+blocks.diorite = 6;
+blocks.diorite_slab = 6;
+blocks.diorite_stairs = 6;
+blocks.diorite_wall = 6;
+blocks.polished_diorite = 6;
+blocks.polished_diorite_slab = 6;
+blocks.polished_diorite_stairs = 6;
+
 // blocks.bedrock = 0;
