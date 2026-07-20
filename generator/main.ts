@@ -19,9 +19,9 @@ import { getDimensionSubPath, REGION_SIZE, round } from "./lib/util.ts";
 //   - dimension option
 //   - regenerate option
 // - write my own nbt parser
-// - Water uses biome colours only for ocean biomes? That way the coasts arent so ugly...
+// - Water uses biome colors only for ocean biomes? That way the coasts arent so ugly...
 // - If anything, water close to shore should be paler than oceans. and temperature is not that important (except lukewarm)
-// - Or maybe... only deep oceans have their own colour. that way you can tell the temperature, but it doesnt interfere with the shore
+// - Or maybe... only deep oceans have their own color. that way you can tell the temperature, but it doesnt interfere with the shore
 // - Deep oceans are useless to mark and confusing because there is already depth shading.
 //   - What if it was based directly on temperature noise instead?
 
@@ -142,7 +142,7 @@ async function generateZoom2(outputPath: string) {
   // SECOND PASS: Generate tiles
   const tileCount = tilesToGenerate.size;
   let i = 0;
-  mkdirSync(`${outputPath}/1`, { recursive: true });
+  mkdirSync(`${outputPath}/2`, { recursive: true });
   for (const [_, [tile2X, tile2Z]] of tilesToGenerate) {
     const subTiles: Uint8ClampedArray<ArrayBuffer>[] = [];
     const percent = round(i++ / tileCount * 100, 0).toString().padStart(2, " ");

@@ -16,7 +16,7 @@ function getChunk(region: Anvil, blockCoords: Coords2d) {
 
 /**
  * Returns the instance of the block at the highest y-value, for a given
- * (x, z) locaction using world coordinates.
+ * (x, z) location using world coordinates.
  * @param chunk
  * @param coords
  * @returns a BlockInstance

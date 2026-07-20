@@ -91,7 +91,8 @@ function mapRegion(worldPath: string, dimension: Dimension, regionX: number, reg
   }
 
   const region = Anvil.fromBuffer(regionFile.buffer);
-  const chunks = region.getAllChunks();
+  let chunks: Chunk[] = [];
+  try { chunks = region.getAllChunks(); } catch (e) {}
   let effectiveHeightmap: number[][] = [];
   const worldBottom = dimension === "overworld" ? -64 : 0;
 
