@@ -70,7 +70,7 @@ export class JejMap extends HTMLElement {
   }
 
   connectedCallback() {
-    this.#init();
+    // this.#init();
 
     // Start drawing
     requestAnimationFrame(_ => { this.#draw() } );
@@ -79,6 +79,8 @@ export class JejMap extends HTMLElement {
   #init(targetX?: number, targetY?: number, targetZoom?: number) {
     this.#pins.innerHTML = "";
 
+    if (this.#snapshot === "") return;
+
     this.#src = `data/${this.#snapshot}/${this.#dimension}`;
 
     this.#offsetX = parseFloat(this.getAttribute("offsetx") ?? ".5");
@@ -86,6 +88,7 @@ export class JejMap extends HTMLElement {
 
     // Coordinate space
     fetch(`${this.#src}/meta.json`).then(async response => {
+      if (!response.ok) return;
       const data = await response.json();
 
       const bounds = data.bounds;
@@ -108,6 +111,7 @@ export class JejMap extends HTMLElement {
 
     // POI data
     fetch(`${this.#src}/pois.json`).then(async response => {
+      if (!response.ok) return;
       const data = await response.json();
       for (const poi of data.pois ?? []) {
         const pin = new JejPin(poi);
@@ -184,6 +188,8 @@ export class JejMap extends HTMLElement {
   }
 
   #draw() {
+    if (this.#snapshot === "") { requestAnimationFrame(_ => { this.#draw() }); return; }
+
     const rect = this.getBoundingClientRect();
     const lod = this.#zoom < .5 ? 2 : 1;
     const tileSizeBlocks = REGION_SIZE * 4 * lod;       // Size of a tile in blocks in the world
