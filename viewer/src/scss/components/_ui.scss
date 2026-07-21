@@ -242,15 +242,17 @@ hr {
 }
 
 jd-slider {
-  display: block;
   position: relative;
-  align-self: center;
+  display: flex;
+  gap: .5rem;
   width: 100%;
+  align-self: center;
   padding: 1rem 0;
   transition: .1s ease color;
   user-select: none;
 
   .scale {
+    flex-grow: 1;
     position: relative;
     height: 18px;
     border: 3px solid #282828;
@@ -268,7 +270,7 @@ jd-slider {
       transition: .1s ease box-shadow;
       pointer-events: none;
     }
-    div { // Marker
+    div:not(.knob) { // Marker
       position: absolute;
       width: 3px;
       height: 100%;
@@ -280,8 +282,8 @@ jd-slider {
 
   .knob {
     position: absolute;
-    top: 0;
-    left: calc((100% - 3rem) * var(--offset));
+    top: -16px;
+    left: calc((100% - 3rem + 6px) * var(--offset) - 3px);
     width: 3rem;
     height: calc(2.5rem + 6px);
     color: #282828;
@@ -290,11 +292,12 @@ jd-slider {
     box-shadow: 0   -6px 0 0 #444 inset,
                 3px  3px 0 0 #FFF8 inset,
                -3px -9px 0 0 #EEE8 inset;
+    z-index: 1;
     transition: .2s ease left;
 
     &:hover { background-color: #EEE; }
     &:active {
-      top: 6px;
+      top: -10px;
       background-color: #AAA;
       height: 2.5rem;
       box-shadow: 3px  3px 0 0 #FFF8 inset,

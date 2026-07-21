@@ -1,6 +1,10 @@
+import { JejIcon } from "./icon";
+
 export class JejSlider extends HTMLElement {
   scale: HTMLDivElement | undefined;
   knob: HTMLDivElement | undefined;
+  leftButton:  HTMLButtonElement | undefined;
+  rightButton: HTMLButtonElement | undefined;
 
   #values: string[] = [];
   #numberValues: number[] = [];
@@ -19,36 +23,42 @@ export class JejSlider extends HTMLElement {
     this.draw();
   }
 
-  attributeChangedCallback() {
-    this.init();
-    this.draw();
-  }
-
   init() {
     this.textContent = "";
     this.scale = document.createElement("div");
     this.scale.classList.add("scale");
+
     this.knob = document.createElement("div");
     this.knob.classList.add("knob");
     this.knob.tabIndex = 0;
     this.knob.addEventListener("keydown", e => {
-      const i = this.#values.indexOf(this.value);
       switch (e.key) {
         case "ArrowLeft":
-          if (i > 0) this.value = this.#values[i-1];
+          this.previousValue();
           break;
         case "ArrowRight":
-          if (i < this.#values.length-1) this.value = this.#values[i+1];
+          this.nextValue();
           break;
       }
     });
-    this.addEventListener("mousedown",  this.pointerDownHandler, { passive: true });
-    this.addEventListener("touchstart", this.pointerDownHandler, { passive: true });
+    this.scale.append(this.knob);
+
+    this.leftButton = document.createElement("button");
+    this.leftButton.append(new JejIcon("chevron-left"));
+    this.leftButton.addEventListener("click", () => this.previousValue(), { passive: true });
+
+    this.rightButton = document.createElement("button");
+    this.rightButton.append(new JejIcon("chevron-right"));
+    this.rightButton.addEventListener("click", () => this.nextValue(), { passive: true });
+
+    this.append(this.leftButton, this.scale, this.rightButton);
+
+    this.scale.addEventListener("mousedown",  this.pointerDownHandler, { passive: true });
+    this.scale.addEventListener("touchstart", this.pointerDownHandler, { passive: true });
     addEventListener("mousemove", this.pointerMoveHandler, { passive: false });
     addEventListener("touchmove", this.pointerMoveHandler, { passive: false });
     addEventListener("mouseup",  this.pointerUpHandler, { passive: true });
     addEventListener("touchend", this.pointerUpHandler, { passive: true });
-    this.append(this.scale, this.knob);
   }
 
   pointerDownHandler = (e: TouchEvent | MouseEvent) => {
@@ -98,7 +108,7 @@ export class JejSlider extends HTMLElement {
 
     const min = this.#numberValues[0];
     const max = this.#numberValues.at(-1)!;
-    this.scale!.innerHTML = "";
+    for (const el of this.scale!.children) if (el !== this.knob) el.remove();
     for (let pos of this.#numberValues) {
       pos -= min;
       pos /= (max - min);
@@ -149,6 +159,16 @@ export class JejSlider extends HTMLElement {
       } else if (diff > smallestDiff) break;
     }
     return this.#values[closestIndex];
+  }
+
+  previousValue() {
+    const i = this.#values.indexOf(this.#value!);
+    if (i > 0) this.value = this.#values[i-1];
+  }
+
+  nextValue() {
+    const i = this.#values.indexOf(this.#value!);
+    if (i < this.#values.length-1) this.value = this.#values[i+1];
   }
 }
 
