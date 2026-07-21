@@ -1,5 +1,5 @@
 import type { BlockInstance, Coords2d, Coords3d } from "mca-json";
-import { Anvil, Block, Chunk } from "mca-json";
+import { Anvil, Block, Chunk, Generic } from "mca-json";
 import type { Dimension } from "./util.ts";
 import { mod, SECTION_SIZE } from "./util.ts";
 
@@ -86,7 +86,7 @@ function getBlock(chunk: Chunk, coords: Coords3d): BlockInstance {
   const palette = blockStates.palette.list;
   const paletteLength = palette.length;
 
-  if (paletteLength === 1) return Block.create(palette[0].compound.Name.string, coords);
+  if (paletteLength === 1) return new Generic(palette[0].compound.Name.string, coords);
 
   const blockData = blockStates.data.longArray;
 
@@ -97,7 +97,7 @@ function getBlock(chunk: Chunk, coords: Coords3d): BlockInstance {
   const packedLong = BigInt(blockData[Math.floor(index / idsPerLong)]) ?? 0n;
   const paletteId = Number((packedLong >> BigInt(index%idsPerLong*bitsPerPaletteId)) & BigInt(2**bitsPerPaletteId-1));
 
-  return Block.create(palette[paletteId].compound.Name.string, coords, chunk.blockEntityData(coords));
+  return new Generic(palette[paletteId].compound.Name.string, coords);
 }
 
 export function getStatus(chunk: Chunk) {

@@ -114,9 +114,9 @@ function mapRegion(worldPath: string, dimension: Dimension, regionX: number, reg
         let surface: BlockInstance;
         try {
           surface = getHighestBlock(chunk, [worldX, worldZ], dimension);
-        } catch (e) {
+        } catch (e: any) {
           // No highest block (column empty) TODO: special case using void id or something.
-          // console.log([worldX, worldZ], e.message);
+          console.log([worldX, worldZ], e.message);
           continue;
         }
         color = getMapColor(region, chunk, surface);
