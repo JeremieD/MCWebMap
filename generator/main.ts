@@ -6,7 +6,6 @@ import type { Dimension } from "./lib/util.ts";
 import { getDimensionSubPath, round } from "./lib/util.ts";
 
 // TODO:
-// - Fix top border of region tiles being brighter
 // - Prettier & faster biome smoothing
 //   - Use dithering? → Use only 4 samples per block, but alternate which ones based on coords parity
 // - Check waterloggable blocks / blocks like kelp
@@ -14,16 +13,12 @@ import { getDimensionSubPath, round } from "./lib/util.ts";
 //   - but mca-json is garbage and does not return block state
 //   - so i guess i gotta find another library or code it myself again :/
 // - Swamp color noise? i dont think this would look good? or it would just be confusing
-// - CLI options
-//   - bound options
-//   - dimension option
-//   - regenerate option
-// - write my own nbt parser
 // - Water uses biome colors only for ocean biomes? That way the coasts arent so ugly...
 // - If anything, water close to shore should be paler than oceans. and temperature is not that important (except lukewarm)
 // - Or maybe... only deep oceans have their own color. that way you can tell the temperature, but it doesnt interfere with the shore
 // - Deep oceans are useless to mark and confusing because there is already depth shading.
 //   - What if it was based directly on temperature noise instead?
+//   - What if the depth shading was just deeper, or there were more levels for deep oceans?
 
 const worldPath = argv[2];
 if (!worldPath) {
@@ -33,11 +28,13 @@ if (!worldPath) {
 
 const metaFilePath = "meta.json";
 
-const dimension = "end";
-
-// generateTile(worldPath, `output/${dimension}`, dimension, 0, 0);
-generateAllTiles(worldPath, `output/${dimension}`, dimension);
+const dimension = "overworld";
 generateZoom2(`output/${dimension}`);
+// generateTile(worldPath, `output/${dimension}`, dimension, 0, -1);
+// for (const dim of ["overworld", "nether", "end"] as Dimension[]) {
+//   generateAllTiles(worldPath, `output/${dim}`, dim);
+//   generateZoom2(`output/${dim}`);
+// }
 
 function generateAllTiles(worldPath: string, outputPath: string, dimension: Dimension) {
   const inputPath = `${worldPath}/${getDimensionSubPath(dimension)}`;
