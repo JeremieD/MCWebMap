@@ -13,8 +13,8 @@ export class JejMap extends HTMLElement {
   #pointerOriginY = 0;
   #scrollFactor = isMac ? -.01 : .25;
   #zoom = .75;
-  #panX = 256;
-  #panY = 256;
+  #panX = 0;
+  #panY = 0;
   #offsetX = .5;
   #offsetY = .5;
   #src = "";
